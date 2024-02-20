@@ -1,0 +1,36 @@
+[package]
+name = "waveshare-154bv2-rs"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+description = "A crate for interfacing with E-INK displays"
+readme = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+license = "MIT OR Apache-2.0"
+rust-version = "1.75"
+keywords = { workspace = true }
+categories = { workspace = true }
+publish = { workspace = true }
+exclude = { workspace = true }
+
+[features]
+default = ["blocking", "async"]
+blocking = ["dep:embedded-hal"]
+async = ["dep:embedded-hal", "dep:embedded-hal-async"]
+draw-target = ["dep:embedded-graphics-core"]
+std = []
+
+[dependencies]
+# Logging
+log = { workspace = true }
+
+# Hardware Abstraction Layer (HAL)
+embedded-hal = { workspace = true, optional = true }
+embedded-hal-async = { workspace = true, optional = true }
+
+# Graphics
+embedded-graphics-core = { workspace = true, optional = true }
+
+[lints]
+workspace = true

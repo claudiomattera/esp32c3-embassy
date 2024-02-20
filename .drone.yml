@@ -1,0 +1,267 @@
+---
+kind: pipeline
+type: docker
+name: build and test
+environment:
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  CARGO_HOME: "./.cargo_home/"
+  PRE_COMMIT_HOME: ".cache/pre-commit"
+  VIRTUAL_ENV: ".cache/venv"
+  WIFI_SSID: "ssid"
+  WIFI_PASSWORD: "p"
+trigger:
+  event:
+    exclude:
+    - tag
+    include:
+    - push
+
+steps:
+- name: restore cache
+  image: plugins/s3-cache
+  settings:
+    endpoint:
+      from_secret: s3_endpoint
+    access_key:
+      from_secret: s3_access_key
+    secret_key:
+      from_secret: s3_secret_key
+    root: drone
+    restore: true
+
+- name: run pre-commit checks
+  image: python:3-slim
+  environment:
+    SKIP: no-commit-to-branch,fmt,cargo-check
+  commands:
+  - python3 -m venv "$${VIRTUAL_ENV}"
+  - . "$${VIRTUAL_ENV}/bin/activate"
+  - apt-get update
+  - apt-get install --no-install-recommends -y git
+  - pip install pre-commit
+  - pre-commit run --all-files
+
+- name: download dependencies
+  image: docker.claudiomattera.it/claudiomattera/rust:1
+  commands:
+  - just fetch
+
+- name: check format
+  image: docker.claudiomattera.it/claudiomattera/rust:1
+  commands:
+  - just check-format
+
+- name: run linter and build
+  image: docker.claudiomattera.it/claudiomattera/rust:1
+  commands:
+  - just lint
+  - just build
+
+- name: prepare cache
+  image: docker.claudiomattera.it/claudiomattera/rust:1
+  commands:
+  - find ./target/debug -maxdepth 1 -type f -and -not -name xtask.exe -delete
+  - rm -rf ./target/.rustc_info.json
+
+- name: rebuild cache
+  image: plugins/s3-cache
+  settings:
+    endpoint:
+      from_secret: s3_endpoint
+    access_key:
+      from_secret: s3_access_key
+    secret_key:
+      from_secret: s3_secret_key
+    root: drone
+    rebuild: true
+    mount:
+      - ./target
+      - ./.cargo_home
+      - ./.cache
+
+---
+kind: pipeline
+type: docker
+name: build release
+environment:
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+trigger:
+  event:
+  - tag
+  - promote
+
+steps:
+- name: create release on gitea
+  when:
+    event:
+    - tag
+  image: plugins/gitea-release
+  settings:
+    base_url:
+      from_secret: gitea_host
+    api_key:
+      from_secret: gitea_token
+    title: "Version ${DRONE_TAG}"
+
+---
+kind: pipeline
+type: docker
+name: notification
+
+depends_on:
+- build and test
+
+trigger:
+  event:
+    exclude:
+    - tag
+    include:
+    - push
+  status:
+  - failure
+
+steps:
+- name: notification
+  image: docker.claudiomattera.it/claudiomattera/drone-gotify:1
+  settings:
+    host:
+      from_secret: gotify_host
+    token:
+      from_secret: gotify_token
+    title: >
+        ✗ Build {{drone.build.number}} failed for {{drone.repo.name}}
+    message: >
+        Commit *{{drone.commit.message | trim}}* pushed by {{drone.commit.author}} on {{drone.commit.branch}}
+
+        Failed stages:
+
+        {% for stage in drone.failed.stages | split(pat=",") %}
+        - {{ stage }}
+        {% endfor %}
+
+        {% set build_link = drone.system.proto ~ "://" ~ drone.system.host ~ "/" ~ drone.repo.owner ~ "/" ~ drone.repo.name ~ "/" ~ drone.build.number -%}
+        See the complete report at <{{ build_link }}>.
+
+---
+kind: pipeline
+type: docker
+name: notification release
+
+depends_on:
+- build release
+
+trigger:
+  event:
+  - tag
+  status:
+  - success
+  - failure
+
+steps:
+- name: notification
+  image: docker.claudiomattera.it/claudiomattera/drone-gotify:1
+  settings:
+    host:
+      from_secret: gotify_host
+    token:
+      from_secret: gotify_token
+    title: >
+        {% if drone.build.status == "success" %}
+        ✓ Release build succeeded for {{drone.repo.name}}-{{drone.tag}}
+        {% else %}
+        ✗ Release build failed for {{drone.repo.name}}-{{drone.tag}}
+        {% endif %}
+    message: >
+        {% if drone.build.status == "success" %}
+        {% else %}
+        Failed steps:
+
+          {% for stage in drone.failed.stages | split(pat=",") %}
+          - {{ stage }}
+          {% endfor %}
+        {% endif %}
+
+        {% set build_link = drone.system.proto ~ "://" ~ drone.system.host ~ "/" ~ drone.repo.owner ~ "/" ~ drone.repo.name ~ "/" ~ drone.build.number -%}
+        See the complete report at <{{ build_link }}>.
+
+---
+kind: pipeline
+type: docker
+name: security report
+trigger:
+  event:
+  - cron
+  cron:
+  - security report
+
+steps:
+- name: check security advisories
+  image: docker.claudiomattera.it/claudiomattera/rust:1
+  commands:
+  - just audit
+
+- name: notification
+  depends_on:
+  - check security advisories
+  when:
+    status:
+      - failure
+  image: docker.claudiomattera.it/claudiomattera/drone-gotify:1
+  settings:
+    host:
+      from_secret: gotify_host
+    token:
+      from_secret: gotify_token
+    title: >
+        ✗ Security audit failed for {{drone.repo.name}}
+    message: >
+        Dependencies of {{ drone.repo.name }} were flagged in the RustSec Advisory Database.
+
+        {% set report_link = drone.system.proto ~ "://" ~ drone.system.host ~ "/" ~ drone.repo.owner ~ "/" ~ drone.repo.name ~ "/" ~ drone.build.number -%}
+        See the complete report at <{{ report_link }}>.
+
+---
+kind: pipeline
+type: docker
+name: cache flush
+trigger:
+  event:
+  - cron
+  cron:
+  - cache flush
+
+steps:
+- name: flush cache
+  image: plugins/s3-cache:1
+  settings:
+    endpoint:
+      from_secret: s3_endpoint
+    access_key:
+      from_secret: s3_access_key
+    secret_key:
+      from_secret: s3_secret_key
+    root: drone
+    flush: true
+    flush_age: 7
+
+- name: notification
+  depends_on:
+  - flush cache
+  when:
+    status:
+      - failure
+  image: docker.claudiomattera.it/claudiomattera/drone-gotify:1
+  settings:
+    host:
+      from_secret: gotify_host
+    token:
+      from_secret: gotify_token
+    title: >
+        ✗ S3 cache flush failed for {{drone.repo.name}}
+    message: >
+        It was not possible to cache the S3 cache of {{ drone.repo.name }}.
+
+        {% set report_link = drone.system.proto ~ "://" ~ drone.system.host ~ "/" ~ drone.repo.owner ~ "/" ~ drone.repo.name ~ "/" ~ drone.build.number -%}
+        See the complete report at <{{ report_link }}>.

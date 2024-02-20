@@ -1,0 +1,20 @@
+# Exclude files when exporting
+.gitattributes export-ignore
+.gitignore     export-ignore
+.drone.yml     export-ignore
+
+# Normalize line endings (CRLF/LF) by default
+* text=auto
+
+# Specify explicit diff drivers
+*.rs text diff=rust
+*.py text diff=python
+*.md text diff=markdown
+
+# Set explicit binary files
+*.fzz binary
+*.jpg binary
+*.png binary
+
+# Set explicit text files
+Cargo.lock text linguist-generated

@@ -1,0 +1,12 @@
+ESP32-C3 board:
+https://github.com/mkjanke/Fritzing-Parts/
+GPL-3.0
+
+
+WaveShare 1.54in E-INK display:
+https://github.com/adafruit/Fritzing-Library/
+Creative Commons Attribution-ShareALike 3.0 Unported
+
+
+BME280 sensor:
+https://forum.fritzing.org/t/bme-bmp-280-sensor/6143

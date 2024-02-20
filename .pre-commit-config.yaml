@@ -1,0 +1,47 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+    -   id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+    -   id: end-of-file-fixer
+    -   id: check-added-large-files
+    -   id: mixed-line-ending
+
+    -   id: check-json
+    -   id: check-yaml
+        args: [--allow-multiple-documents]
+    -   id: check-toml
+    -   id: check-xml
+
+    -   id: check-executables-have-shebangs
+    -   id: check-shebang-scripts-are-executable
+
+    -   id: check-vcs-permalinks
+    -   id: fix-byte-order-marker
+
+    -   id: check-case-conflict
+    -   id: check-merge-conflict
+    -   id: check-symlinks
+    -   id: destroyed-symlinks
+    -   id: no-commit-to-branch
+
+-   repo: https://github.com/doublify/pre-commit-rust
+    rev: v1.0
+    hooks:
+    -   id: fmt
+        name: check Rust source format
+
+-   repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.1
+    hooks:
+    -   id: gitleaks
+        name: detect secrets
+
+-   repo: https://github.com/crate-ci/typos
+    rev: v1.17.1
+    hooks:
+    -   id: typos
+        name: check spelling

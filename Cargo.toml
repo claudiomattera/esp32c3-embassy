@@ -1,0 +1,151 @@
+[workspace]
+resolver = "2"
+members = [
+    "esp32c3-embassy",
+]
+
+[workspace.package]
+version = "0.1.0"
+authors = ["Claudio Mattera <dev@claudiomattera.it>"]
+edition = "2021"
+readme = "README.md"
+homepage = "https://gitlab.com/claudiomattera/esp32c3-embassy"
+repository = "https://gitlab.com/claudiomattera/esp32c3-embassy"
+keywords = [
+    "display",
+    "sensor",
+    "async",
+    "i2c",
+    "spi",
+    "embedded-hal",
+    "embedded-hal-async",
+]
+categories = [
+    "embedded",
+    "no-std",
+]
+publish = false
+exclude = [
+    ".gitattributes",
+    ".gitignore",
+    ".drone.yml",
+    ".pre-commit-config.yaml",
+    "justfile",
+]
+
+[workspace.dependencies]
+# Embassy
+embassy-executor = { version = "0.5", default-features = false }
+embassy-sync = { version = "0.5", default-features = false }
+embassy-time = { version = "0.3", default-features = false }
+embassy-net = { version = "0.4", default-features = false }
+
+# Hardware Abstraction Layer
+embedded-hal = { version = "1", default-features = false }
+embedded-hal-async = { version = "1", default-features = false }
+embedded-hal-bus = { version = "0.1", default-features = false }
+embedded-io-async = { version = "0.6", default-features = false }
+
+# ESP specifics
+esp-hal = { version = "0.16", default-features = false }
+esp-backtrace = { version = "0.11", default-features = false }
+esp-println = { version = "0.9", default-features = false }
+esp-wifi = { version = "0.4", default-features = false }
+
+# Logging
+log = { version = "0.4", default-features = false }
+
+# Sensor
+bme280-rs = { version = "0.2", default-features = false }
+uom = { version = "0.33", default-features = false }
+
+# Display
+waveshare-154bv2-rs = { path = "./waveshare-154bv2-rs", default-features = false }
+embedded-graphics = { version = "0.8", default-features = false }
+embedded-graphics-core = { version = "0.4", default-features = false }
+embedded-layout = { version = "0.4", default-features = false }
+
+# Static objects
+static_cell = { version = "2", default-features = false }
+
+# Heapless data types
+heapless = { version = "0.8", default-features = false }
+
+# Time
+time = { version = "0.3", default-features = false }
+
+# TLS
+embedded-tls = { version = "0.17", default-features = false }
+
+# HTTP
+reqwless = { version = "0.11", default-features = false }
+
+# Random
+rand_core = { version = "0.6", default-features = false }
+
+[workspace.lints.rust]
+missing_docs = "allow"
+
+[workspace.lints.clippy]
+# Cargo
+multiple_crate_versions = "warn"
+cargo_common_metadata = "deny"
+negative_feature_names = "deny"
+redundant_feature_names = "deny"
+wildcard_dependencies = "deny"
+
+# Predefined
+correctness = { level = "deny", priority = -1 }
+suspicious = { level = "deny", priority = -1 }
+complexity = { level = "deny", priority = -1 }
+perf = { level = "deny", priority = -1 }
+style = { level = "deny", priority = -1 }
+restriction = { level = "allow", priority = -1 }
+pedantic = { level = "deny", priority = -1 }
+
+# Additional
+missing_docs_in_private_items = "deny"
+missing_errors_doc = "deny"
+missing_panics_doc = "deny"
+allow_attributes_without_reason = "deny"
+clone_on_ref_ptr = "deny"
+else_if_without_else = "deny"
+expect_used = "deny"
+format_push_string = "deny"
+if_then_some_else_none = "deny"
+let_underscore_must_use = "deny"
+lossy_float_literal = "deny"
+panic = "deny"
+panic_in_result_fn = "deny"
+pattern_type_mismatch = "deny"
+rc_buffer = "deny"
+rc_mutex = "deny"
+rest_pat_in_fully_bound_structs = "deny"
+self_named_module_files = "deny"
+str_to_string = "deny"
+string_slice = "deny"
+string_to_string = "deny"
+todo = "deny"
+undocumented_unsafe_blocks = "deny"
+unimplemented = "deny"
+unreachable = "deny"
+unseparated_literal_suffix = "deny"
+unwrap_used = "deny"
+verbose_file_reads = "deny"
+
+# Additional (warning)
+default_numeric_fallback = "warn"
+error_impl_error = "warn"
+min_ident_chars = "warn"
+multiple_inherent_impl = "warn"
+multiple_unsafe_ops_per_block = "warn"
+shadow_same = "warn"
+single_char_lifetime_names = "warn"
+std_instead_of_alloc = "warn"
+
+[profile.release]
+strip = "debuginfo"
+lto = "fat"
+opt-level = "s"
+incremental = false
+codegen-units = 1
