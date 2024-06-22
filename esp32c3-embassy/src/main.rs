@@ -8,7 +8,6 @@
 
 #![no_std]
 #![no_main]
-#![allow(static_mut_refs)]
 
 use core::convert::Infallible;
 
@@ -76,6 +75,9 @@ mod dashboard;
 mod display;
 use self::display::update_task as update_display_task;
 
+mod cell;
+use self::cell::SyncUnsafeCell;
+
 mod clock;
 use self::clock::Clock;
 use self::clock::Error as ClockError;
@@ -132,14 +134,15 @@ static RX_DESCRIPTORS: StaticCell<[DmaDescriptor; DESCRIPTORS_SIZE]> = StaticCel
 /// This is a statically allocated variable and it is placed in the RTC Fast
 /// memory, which survives deep sleep.
 #[ram(rtc_fast)]
-static mut BOOT_COUNT: u32 = 0;
+static BOOT_COUNT: SyncUnsafeCell<u32> = SyncUnsafeCell::new(0);
 
 /// Stored history between deep sleep cycles
 ///
 /// This is a statically allocated variable and it is placed in the RTC Fast
 /// memory, which survives deep sleep.
 #[ram(rtc_fast)]
-static mut HISTORY: HistoryBuffer<(OffsetDateTime, Sample), 96> = HistoryBuffer::new();
+static HISTORY: SyncUnsafeCell<HistoryBuffer<(OffsetDateTime, Sample), 96>> =
+    SyncUnsafeCell::new(HistoryBuffer::new());
 
 /// Main task
 #[main]
@@ -147,18 +150,31 @@ async fn main(spawner: Spawner) {
     setup_logging();
 
     // SAFETY:
-    // There is only one thread
-    let boot_count = unsafe { &mut BOOT_COUNT };
+    // This is the only place where a mutable reference is taken
+    let boot_count: Option<&'static mut _> = unsafe { BOOT_COUNT.get().as_mut() };
+    // SAFETY:
+    // This is pointing to a valid value
+    let boot_count: &'static mut _ = unsafe { boot_count.unwrap_unchecked() };
     info!("Current boot count = {boot_count}");
     *boot_count += 1;
 
-    if let Err(error) = main_fallible(&spawner).await {
+    // SAFETY:
+    // This is the only place where a mutable reference is taken
+    let history: Option<&'static mut _> = unsafe { HISTORY.get().as_mut() };
+    // SAFETY:
+    // This is pointing to a valid value
+    let history: &'static mut _ = unsafe { history.unwrap_unchecked() };
+
+    if let Err(error) = main_fallible(&spawner, history).await {
         error!("Error while running firmware: {error:?}");
     }
 }
 
 /// Main task that can return an error
-async fn main_fallible(spawner: &Spawner) -> Result<(), Error> {
+async fn main_fallible(
+    spawner: &Spawner,
+    history: &'static mut HistoryBuffer<(OffsetDateTime, Sample), 96>,
+) -> Result<(), Error> {
     let peripherals = Peripherals::take();
     let system = SystemControl::new(peripherals.SYSTEM);
 
@@ -244,9 +260,6 @@ async fn main_fallible(spawner: &Spawner) -> Result<(), Error> {
     let receiver = channel.receiver();
     let sender = channel.sender();
 
-    // SAFETY:
-    // There is only one thread
-    let history = unsafe { &mut HISTORY };
     info!("History contains {} elements", history.len());
 
     info!("Spawn tasks");

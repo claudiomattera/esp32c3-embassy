@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `esp-hal-embassy` version 0.1
 - Use item-level granularity for imports
 - Use stable Rust toolchain
+- Replace `static mut` with `SyncUnsafeCell`
 
 
 ## [0.1.0] - 2024-03-16
