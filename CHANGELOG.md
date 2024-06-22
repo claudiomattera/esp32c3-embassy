@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Update `embassy-sync` to version 0.6
+- Update `esp-hal` to version 0.18
+- Update `esp-backtrace` to version 0.12
+- Add `esp-hal-embassy` version 0.1
 
 
 ## [0.1.0] - 2024-03-16

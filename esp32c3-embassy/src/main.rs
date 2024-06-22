@@ -23,11 +23,13 @@ use embassy_sync::{blocking_mutex::raw::NoopRawMutex, channel::Channel};
 
 use esp_hal::{
     clock::ClockControl,
+    delay::Delay as EspDelay,
     dma::{Channel0, Dma, DmaDescriptor, DmaPriority},
-    embassy,
+    gpio::{Input, Io, Level, Output, Pull},
     i2c::I2C,
     peripherals::{Peripherals, SPI2},
-    prelude::{_esp_hal_system_SystemExt, _fugit_RateExtU32, entry, main, ram},
+    prelude::{_fugit_RateExtU32, entry, main, ram},
+    rng::Rng,
     spi::{
         master::{
             dma::{SpiDma, WithDmaSpi2},
@@ -35,17 +37,18 @@ use esp_hal::{
         },
         FullDuplexMode, SpiMode,
     },
-    timer::TimerGroup,
-    Delay as EspDelay, Rng, IO,
+    system::SystemControl,
+    timer::timg::TimerGroup,
+    Async,
 };
+
+use esp_hal_embassy::init as initialize_embassy;
 
 use time::OffsetDateTime;
 
 use heapless::{HistoryBuffer, String};
 
 use embedded_hal_bus::spi::ExclusiveDevice;
-
-use embedded_hal::digital::OutputPin;
 
 use esp_backtrace as _;
 
@@ -142,9 +145,10 @@ async fn main(spawner: Spawner) {
 /// Main task that can return an error
 async fn main_fallible(spawner: &Spawner) -> Result<(), Error> {
     let peripherals = Peripherals::take();
-    let system = peripherals.SYSTEM.split();
+    let system = SystemControl::new(peripherals.SYSTEM);
+
     let clocks = ClockControl::max(system.clock_control).freeze();
-    embassy::init(&clocks, TimerGroup::new(peripherals.TIMG0, &clocks));
+    initialize_embassy(&clocks, TimerGroup::new_async(peripherals.TIMG0, &clocks));
 
     let rng = Rng::new(peripherals.RNG);
 
@@ -162,7 +166,7 @@ async fn main_fallible(spawner: &Spawner) -> Result<(), Error> {
             peripherals.SYSTIMER,
             rng,
             peripherals.WIFI,
-            system.radio_clock_control,
+            peripherals.RADIO_CLK,
             &clocks,
             (ssid, password),
         )
@@ -180,17 +184,17 @@ async fn main_fallible(spawner: &Spawner) -> Result<(), Error> {
 
     info!("Now is {}", clock.now()?);
 
-    let io = IO::new(peripherals.GPIO, peripherals.IO_MUX);
+    let io = Io::new(peripherals.GPIO, peripherals.IO_MUX);
 
     info!("Turn off cold LED");
-    let mut cold_led = io.pins.gpio18.into_push_pull_output();
-    cold_led.set_low()?;
+    let mut cold_led = io.pins.gpio18;
+    cold_led.set_low();
 
     info!("Create I²C bus");
     let sda = io.pins.gpio1;
     let scl = io.pins.gpio2;
 
-    let i2c = I2C::new(peripherals.I2C0, sda, scl, 25_u32.kHz(), &clocks);
+    let i2c = I2C::new_async(peripherals.I2C0, sda, scl, 25_u32.kHz(), &clocks);
 
     info!("Create SPI bus");
     let spi_bus = Spi::new(peripherals.SPI2, 25_u32.kHz(), SpiMode::Mode0, &clocks)
@@ -205,20 +209,20 @@ async fn main_fallible(spawner: &Spawner) -> Result<(), Error> {
     let dma = Dma::new(peripherals.DMA);
     let dma_channel = dma.channel0;
 
-    let spi_dma: SpiDma<'_, SPI2, Channel0, FullDuplexMode> = spi_bus.with_dma(
-        dma_channel.configure(false, descriptors, rx_descriptors, DmaPriority::Priority0),
+    let spi_dma: SpiDma<'_, SPI2, Channel0, FullDuplexMode, Async> = spi_bus.with_dma(
+        dma_channel.configure_for_async(false, descriptors, rx_descriptors, DmaPriority::Priority0),
     );
 
     info!("Create PIN for SPI Chip Select");
-    let cs = io.pins.gpio8.into_push_pull_output();
+    let cs = io.pins.gpio8;
 
     info!("Create additional PINs");
-    let busy = io.pins.gpio9.into_pull_up_input();
-    let rst = io.pins.gpio10.into_push_pull_output();
-    let dc = io.pins.gpio19.into_push_pull_output();
+    let busy = Input::new(io.pins.gpio9, Pull::Up);
+    let rst = Output::new(io.pins.gpio10, Level::Low);
+    let dc = Output::new(io.pins.gpio19, Level::Low);
 
     info!("Create SPI device");
-    let spi_device = ExclusiveDevice::new(spi_dma, cs, Delay);
+    let spi_device = ExclusiveDevice::new(spi_dma, Output::new(cs, Level::Low), Delay);
 
     info!("Create channel");
     let channel: &'static mut _ = CHANNEL.init(Channel::new());

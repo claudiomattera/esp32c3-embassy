@@ -22,9 +22,10 @@ use time::OffsetDateTime;
 
 use esp_hal::{
     dma::Channel0,
-    gpio::{Gpio10, Gpio19, Gpio8, Gpio9, Input, Output, PullUp, PushPull},
+    gpio::{Gpio10, Gpio19, Gpio8, Gpio9, Input, Output},
     peripherals::SPI2,
     spi::{master::dma::SpiDma, FullDuplexMode},
+    Async,
 };
 
 use heapless::HistoryBuffer;
@@ -42,13 +43,13 @@ use crate::{
 #[embassy_executor::task]
 pub async fn update_task(
     spi_device: ExclusiveDevice<
-        SpiDma<'static, SPI2, Channel0, FullDuplexMode>,
-        Gpio8<Output<PushPull>>,
+        SpiDma<'static, SPI2, Channel0, FullDuplexMode, Async>,
+        Output<'static, Gpio8>,
         Delay,
     >,
-    busy: Gpio9<Input<PullUp>>,
-    rst: Gpio10<Output<PushPull>>,
-    dc: Gpio19<Output<PushPull>>,
+    busy: Input<'static, Gpio9>,
+    rst: Output<'static, Gpio10>,
+    dc: Output<'static, Gpio19>,
     receiver: Receiver<'static, NoopRawMutex, Reading, 3>,
     history: &'static mut HistoryBuffer<(OffsetDateTime, Sample), 96>,
 ) {

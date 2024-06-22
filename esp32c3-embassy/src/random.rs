@@ -8,7 +8,7 @@
 
 use rand_core::{CryptoRng, Error, RngCore};
 
-use esp_hal::Rng;
+use esp_hal::rng::Rng;
 
 /// A wrapper for ESP random number generator that implement traits form
 /// `rand_core`

@@ -6,7 +6,7 @@
 
 //! Domain types
 
-use esp_hal::Rng;
+use esp_hal::rng::Rng;
 
 use uom::si::f32::{Pressure, Ratio as Humidity, ThermodynamicTemperature as Temperature};
 

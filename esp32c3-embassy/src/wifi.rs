@@ -25,10 +25,9 @@ use embassy_time::{Duration, Timer};
 
 use esp_hal::{
     clock::Clocks,
-    peripherals::{SYSTIMER, WIFI},
-    system::RadioClockControl,
-    systimer::SystemTimer,
-    Rng,
+    peripherals::{RADIO_CLK, SYSTIMER, WIFI},
+    rng::Rng,
+    timer::systimer::SystemTimer,
 };
 
 use heapless::String;
@@ -54,7 +53,7 @@ pub async fn connect(
     systimer: SYSTIMER,
     rng: Rng,
     wifi: WIFI,
-    radio_clock_control: RadioClockControl,
+    radio_clock_control: RADIO_CLK,
     clocks: &Clocks<'_>,
     (ssid, password): (String<32>, String<64>),
 ) -> Result<&'static Stack<WifiDevice<'static, WifiStaDevice>>, Error> {
