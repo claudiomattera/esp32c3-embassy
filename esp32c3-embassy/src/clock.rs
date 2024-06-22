@@ -136,13 +136,13 @@ fn duration_to_next_rounded_wakeup(now: Duration, period: Duration) -> Duration 
 #[derive(Debug)]
 pub enum Error {
     /// A time component is out of range
-    TimeComponentRange(TimeComponentRange),
+    TimeComponentRange(#[allow(unused)] TimeComponentRange),
 
     /// The time is invalid in the current time offset
     InvalidInOffset,
 
     /// Error synchronizing time from World Time API
-    Synchronization(WorldTimeApiError),
+    Synchronization(#[allow(unused)] WorldTimeApiError),
 }
 
 impl From<TimeComponentRange> for Error {

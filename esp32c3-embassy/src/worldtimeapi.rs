@@ -79,16 +79,16 @@ pub enum Error {
     Unknown,
 
     /// A time component is out of range
-    TimeComponentRange(TimeComponentRangeError),
+    TimeComponentRange(#[allow(unused)] TimeComponentRangeError),
 
     /// Error from HTTP client
-    Http(HttpError),
+    Http(#[allow(unused)] HttpError),
 
     /// An integer valued returned by the server could not be parsed
-    ParseInt(ParseIntError),
+    ParseInt(#[allow(unused)] ParseIntError),
 
     /// Text returned by the server is not valid UTF-8
-    Utf8(Utf8Error),
+    Utf8(#[allow(unused)] Utf8Error),
 }
 
 impl From<TimeComponentRangeError> for Error {

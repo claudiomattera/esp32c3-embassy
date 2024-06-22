@@ -124,16 +124,13 @@ async fn initialize(
 #[derive(Debug)]
 enum SensorError {
     /// Error from clock
-    #[allow(unused)]
-    Clock(ClockError),
+    Clock(#[allow(unused)] ClockError),
 
     /// Error from domain
-    #[allow(unused)]
-    Domain(DomainError),
+    Domain(#[allow(unused)] DomainError),
 
     /// Error from I²C bus
-    #[allow(unused)]
-    I2c(I2cError),
+    I2c(#[allow(unused)] I2cError),
 }
 
 impl From<ClockError> for SensorError {

@@ -8,7 +8,6 @@
 
 #![no_std]
 #![no_main]
-#![feature(type_alias_impl_trait)]
 #![allow(static_mut_refs)]
 
 use core::convert::Infallible;

@@ -247,25 +247,25 @@ pub enum Error {
     DnsLookup,
 
     /// Error within TCP streams
-    PortParse(ParseIntError),
+    PortParse(#[allow(unused)] ParseIntError),
 
     /// Error within TCP streams
-    Tcp(TcpError),
+    Tcp(#[allow(unused)] TcpError),
 
     /// Error within TCP connection
-    TcpConnect(TcpConnectError),
+    TcpConnect(#[allow(unused)] TcpConnectError),
 
     /// Error within DNS system
-    Dns(DnsError),
+    Dns(#[allow(unused)] DnsError),
 
     /// Error while formatting strings
-    Format(FormatError),
+    Format(#[allow(unused)] FormatError),
 
     /// Error while handling TLS
-    Tls(TlsError),
+    Tls(#[allow(unused)] TlsError),
 
     /// Error in HTTP client
-    Reqless(ReqlessError),
+    Reqless(#[allow(unused)] ReqlessError),
 }
 
 impl From<TcpError> for Error {

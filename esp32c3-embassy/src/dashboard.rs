@@ -151,8 +151,7 @@ pub enum Error {
     Impossible(Infallible),
 
     /// An error occurred while formatting a string
-    #[allow(unused)]
-    Fmt(FmtError),
+    Fmt(#[allow(unused)] FmtError),
 }
 
 impl From<FmtError> for Error {

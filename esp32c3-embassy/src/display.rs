@@ -132,12 +132,10 @@ fn log_sample(sample: &Sample) {
 #[derive(Debug)]
 enum ReportError {
     /// An error occurred while updating the display
-    #[allow(unused)]
-    Display(DisplayError),
+    Display(#[allow(unused)] DisplayError),
 
     /// An error occurred while drawing the dashboard
-    #[allow(unused)]
-    Dashboard(DashboardError),
+    Dashboard(#[allow(unused)] DashboardError),
 }
 
 impl From<DisplayError> for ReportError {

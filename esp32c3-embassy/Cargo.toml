@@ -18,7 +18,7 @@ default = []
 
 [dependencies]
 # Embassy
-embassy-executor = { workspace = true, features = ["nightly"] }
+embassy-executor = { workspace = true, features = ["task-arena-size-81920"] }
 embassy-sync = { workspace = true }
 embassy-time = { workspace = true, features = ["generic-queue"] }
 embassy-net = { workspace = true, features = ["dhcpv4", "dns", "tcp", "udp"] }

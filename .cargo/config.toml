@@ -17,6 +17,3 @@ rustflags = [
 
 [env]
 ESP_LOGLEVEL = "INFO"
-
-[unstable]
-build-std = ["core", "alloc"]

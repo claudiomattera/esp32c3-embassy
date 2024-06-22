@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update `esp-backtrace` to version 0.12
 - Add `esp-hal-embassy` version 0.1
 - Use item-level granularity for imports
+- Use stable Rust toolchain
 
 
 ## [0.1.0] - 2024-03-16
