@@ -411,7 +411,7 @@ dependencies = [
  "atomic-pool",
  "document-features",
  "embassy-net-driver",
- "embassy-sync",
+ "embassy-sync 0.5.0",
  "embassy-time",
  "embedded-io-async",
  "embedded-nal-async",
@@ -434,6 +434,19 @@ name = "embassy-sync"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd938f25c0798db4280fcd8026bf4c2f48789aebf8f77b6e5cf8a7693ba114ec"
+dependencies = [
+ "cfg-if",
+ "critical-section",
+ "embedded-io-async",
+ "futures-util",
+ "heapless 0.8.0",
+]
+
+[[package]]
+name = "embassy-sync"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b3e0c49ff02ebe324faf3a8653ba91582e2d0a7fdef5bc88f449d5aa1bfcc05c"
 dependencies = [
  "cfg-if",
  "critical-section",
@@ -704,7 +717,7 @@ dependencies = [
  "document-features",
  "embassy-executor",
  "embassy-futures",
- "embassy-sync",
+ "embassy-sync 0.5.0",
  "embassy-time-driver",
  "embedded-can",
  "embedded-dma",
@@ -784,7 +797,7 @@ dependencies = [
  "critical-section",
  "embassy-futures",
  "embassy-net-driver",
- "embassy-sync",
+ "embassy-sync 0.5.0",
  "embedded-io",
  "embedded-io-async",
  "enumset",
@@ -851,7 +864,7 @@ dependencies = [
  "bme280-rs",
  "embassy-executor",
  "embassy-net",
- "embassy-sync",
+ "embassy-sync 0.6.0",
  "embassy-time",
  "embedded-graphics",
  "embedded-hal 1.0.0",
