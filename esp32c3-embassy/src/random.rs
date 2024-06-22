@@ -6,7 +6,9 @@
 
 //! Random numbers generator
 
-use rand_core::{CryptoRng, Error, RngCore};
+use rand_core::CryptoRng;
+use rand_core::Error;
+use rand_core::RngCore;
 
 use esp_hal::rng::Rng;
 

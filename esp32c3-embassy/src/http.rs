@@ -9,23 +9,33 @@
 use core::fmt::Error as FormatError;
 use core::num::ParseIntError;
 
-use log::{debug, trace, warn};
+use log::debug;
+use log::trace;
+use log::warn;
 
-use embassy_net::{
-    dns::{DnsQueryType, Error as DnsError},
-    tcp::{ConnectError as TcpConnectError, Error as TcpError, TcpSocket},
-    IpAddress, Stack,
-};
+use embassy_net::dns::DnsQueryType;
+use embassy_net::dns::Error as DnsError;
+use embassy_net::tcp::ConnectError as TcpConnectError;
+use embassy_net::tcp::Error as TcpError;
+use embassy_net::tcp::TcpSocket;
+use embassy_net::IpAddress;
+use embassy_net::Stack;
 
-use esp_wifi::wifi::{WifiDevice, WifiStaDevice};
+use esp_wifi::wifi::WifiDevice;
+use esp_wifi::wifi::WifiStaDevice;
 
-use embedded_tls::{Aes128GcmSha256, NoVerify, TlsConfig, TlsConnection, TlsContext, TlsError};
+use embedded_tls::Aes128GcmSha256;
+use embedded_tls::NoVerify;
+use embedded_tls::TlsConfig;
+use embedded_tls::TlsConnection;
+use embedded_tls::TlsContext;
+use embedded_tls::TlsError;
 
-use reqwless::{
-    request::{Method, Request, RequestBuilder},
-    response::Response,
-    Error as ReqlessError,
-};
+use reqwless::request::Method;
+use reqwless::request::Request;
+use reqwless::request::RequestBuilder;
+use reqwless::response::Response;
+use reqwless::Error as ReqlessError;
 
 use heapless::Vec;
 

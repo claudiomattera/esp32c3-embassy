@@ -8,13 +8,19 @@
 
 //!
 
-use log::{debug, log_enabled, trace, Level::Trace};
+use log::debug;
+use log::log_enabled;
+use log::trace;
+use log::Level::Trace;
 
-use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
+use embedded_hal_async::delay::DelayNs;
+use embedded_hal_async::digital::Wait;
+use embedded_hal_async::spi::SpiDevice;
 
 use embedded_hal::digital::OutputPin;
 
-use crate::{command, Error};
+use crate::command;
+use crate::Error;
 
 #[cfg(feature = "draw-target")]
 use crate::Buffer;
@@ -125,7 +131,7 @@ where
         self.send_data(&[0x00]).await?;
         self.send_command(command::SET_RAM_Y_ADDRESS_COUNTER)
             .await?;
-        self.send_data(&[0xC7]).await?;
+        self.send_data(&[0xc7]).await?;
         self.send_data(&[0x00]).await?;
         debug!("Set RAM address counters / done");
 
@@ -155,7 +161,7 @@ where
         debug!("Set driver output control");
         self.wait_until_idle().await?;
         self.send_command(command::DRIVER_OUTPUT_CONTROL).await?;
-        self.send_data(&[0xC7, 0x00, 0x01]).await?;
+        self.send_data(&[0xc7, 0x00, 0x01]).await?;
         debug!("Set driver output control / done");
 
         Ok(())
@@ -191,7 +197,7 @@ where
         let [y_start_0, y_start_1] = y_start.to_le_bytes();
         let [y_end_0, y_end_1] = y_end.to_le_bytes();
 
-        assert_eq!(y_start_0, 0xC7); // 0xC7 = 199 = 200 - 1
+        assert_eq!(y_start_0, 0xc7); // 0xC7 = 199 = 200 - 1
         assert_eq!(y_start_1, 0x00);
 
         assert_eq!(y_end_0, 0x00);
@@ -340,7 +346,7 @@ where
     async fn refresh(&mut self) -> Result<(), Error> {
         debug!("Refresh display");
         self.send_command(command::DISPLAY_UPDATE_CONTROL_2).await?;
-        self.send_data(&[0xF7]).await?;
+        self.send_data(&[0xf7]).await?;
 
         self.send_command(command::MASTER_ACTIVATION).await?;
 

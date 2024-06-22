@@ -1,0 +1,12 @@
+# https://github.com/rust-lang/rustfmt/blob/master/Configurations.md#imports_granularity
+imports_granularity = "Item"
+
+# https://github.com/rust-lang/rustfmt/blob/master/Configurations.md#chain_width
+# chain_width = 0
+
+# https://github.com/rust-lang/rustfmt/blob/master/Configurations.md#hex_literal_case
+hex_literal_case = "Lower"
+
+
+# https://github.com/rust-lang/rustfmt/blob/master/Configurations.md#newline_style
+newline_style = "Unix"

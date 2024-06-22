@@ -10,7 +10,10 @@ use core::time::Duration;
 
 use log::info;
 
-use esp_hal::{delay::Delay, peripherals::LPWR, rtc_cntl::sleep::TimerWakeupSource, rtc_cntl::Rtc};
+use esp_hal::delay::Delay;
+use esp_hal::peripherals::LPWR;
+use esp_hal::rtc_cntl::sleep::TimerWakeupSource;
+use esp_hal::rtc_cntl::Rtc;
 
 /// Enter deep sleep for the specified interval
 ///

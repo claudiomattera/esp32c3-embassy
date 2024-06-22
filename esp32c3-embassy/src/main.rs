@@ -13,40 +13,52 @@
 
 use core::convert::Infallible;
 
-use log::{error, info};
+use log::error;
+use log::info;
 
 use embassy_executor::Spawner;
 
-use embassy_time::{Delay, Duration, Timer};
+use embassy_time::Delay;
+use embassy_time::Duration;
+use embassy_time::Timer;
 
-use embassy_sync::{blocking_mutex::raw::NoopRawMutex, channel::Channel};
+use embassy_sync::blocking_mutex::raw::NoopRawMutex;
+use embassy_sync::channel::Channel;
 
-use esp_hal::{
-    clock::ClockControl,
-    delay::Delay as EspDelay,
-    dma::{Channel0, Dma, DmaDescriptor, DmaPriority},
-    gpio::{Input, Io, Level, Output, Pull},
-    i2c::I2C,
-    peripherals::{Peripherals, SPI2},
-    prelude::{_fugit_RateExtU32, entry, main, ram},
-    rng::Rng,
-    spi::{
-        master::{
-            dma::{SpiDma, WithDmaSpi2},
-            Spi,
-        },
-        FullDuplexMode, SpiMode,
-    },
-    system::SystemControl,
-    timer::timg::TimerGroup,
-    Async,
-};
+use esp_hal::clock::ClockControl;
+use esp_hal::delay::Delay as EspDelay;
+use esp_hal::dma::Channel0;
+use esp_hal::dma::Dma;
+use esp_hal::dma::DmaDescriptor;
+use esp_hal::dma::DmaPriority;
+use esp_hal::gpio::Input;
+use esp_hal::gpio::Io;
+use esp_hal::gpio::Level;
+use esp_hal::gpio::Output;
+use esp_hal::gpio::Pull;
+use esp_hal::i2c::I2C;
+use esp_hal::peripherals::Peripherals;
+use esp_hal::peripherals::SPI2;
+use esp_hal::prelude::_fugit_RateExtU32;
+use esp_hal::prelude::entry;
+use esp_hal::prelude::main;
+use esp_hal::prelude::ram;
+use esp_hal::rng::Rng;
+use esp_hal::spi::master::dma::SpiDma;
+use esp_hal::spi::master::dma::WithDmaSpi2;
+use esp_hal::spi::master::Spi;
+use esp_hal::spi::FullDuplexMode;
+use esp_hal::spi::SpiMode;
+use esp_hal::system::SystemControl;
+use esp_hal::timer::timg::TimerGroup;
+use esp_hal::Async;
 
 use esp_hal_embassy::init as initialize_embassy;
 
 use time::OffsetDateTime;
 
-use heapless::{HistoryBuffer, String};
+use heapless::HistoryBuffer;
+use heapless::String;
 
 use embedded_hal_bus::spi::ExclusiveDevice;
 
@@ -66,13 +78,15 @@ mod display;
 use self::display::update_task as update_display_task;
 
 mod clock;
-use self::clock::{Clock, Error as ClockError};
+use self::clock::Clock;
+use self::clock::Error as ClockError;
 
 mod http;
 use self::http::Client as HttpClient;
 
 mod domain;
-use self::domain::{Reading, Sample};
+use self::domain::Reading;
+use self::domain::Sample;
 
 mod random;
 use self::random::RngWrapper;
@@ -81,7 +95,9 @@ mod sleep;
 use self::sleep::enter_deep as enter_deep_sleep;
 
 mod wifi;
-use self::wifi::{connect as connect_to_wifi, Error as WifiError, STOP_WIFI_SIGNAL};
+use self::wifi::connect as connect_to_wifi;
+use self::wifi::Error as WifiError;
+use self::wifi::STOP_WIFI_SIGNAL;
 
 mod worldtimeapi;
 

@@ -6,16 +6,18 @@
 
 //! Data types and function for keeping time and synchronizing clock
 
-use embassy_time::{Duration, Instant};
+use embassy_time::Duration;
+use embassy_time::Instant;
 
 use esp_hal::macros::ram;
 
-use time::{error::ComponentRange as TimeComponentRange, OffsetDateTime, UtcOffset};
+use time::error::ComponentRange as TimeComponentRange;
+use time::OffsetDateTime;
+use time::UtcOffset;
 
-use crate::{
-    http::Client as HttpClient,
-    worldtimeapi::{Error as WorldTimeApiError, WorldTimeApiClient as _},
-};
+use crate::http::Client as HttpClient;
+use crate::worldtimeapi::Error as WorldTimeApiError;
+use crate::worldtimeapi::WorldTimeApiClient as _;
 
 /// Stored boot time between deep sleep cycles
 ///

@@ -6,25 +6,34 @@
 
 //! Task for reading sensor value
 
-use log::{error, info, warn};
+use log::error;
+use log::info;
+use log::warn;
 
-use embassy_time::{Delay, Duration, Timer};
+use embassy_time::Delay;
+use embassy_time::Duration;
+use embassy_time::Timer;
 
-use embassy_sync::{blocking_mutex::raw::NoopRawMutex, channel::Sender};
+use embassy_sync::blocking_mutex::raw::NoopRawMutex;
+use embassy_sync::channel::Sender;
 
-use esp_hal::{
-    i2c::{Error as I2cError, I2C},
-    peripherals::I2C0,
-    rng::Rng,
-    Async,
-};
+use esp_hal::i2c::Error as I2cError;
+use esp_hal::i2c::I2C;
+use esp_hal::peripherals::I2C0;
+use esp_hal::rng::Rng;
+use esp_hal::Async;
 
-use bme280_rs::{AsyncBme280, Configuration, Oversampling, Sample as Bme280Sample, SensorMode};
+use bme280_rs::AsyncBme280;
+use bme280_rs::Configuration;
+use bme280_rs::Oversampling;
+use bme280_rs::Sample as Bme280Sample;
+use bme280_rs::SensorMode;
 
-use crate::{
-    clock::{Clock, Error as ClockError},
-    domain::{Error as DomainError, Reading, Sample},
-};
+use crate::clock::Clock;
+use crate::clock::Error as ClockError;
+use crate::domain::Error as DomainError;
+use crate::domain::Reading;
+use crate::domain::Sample;
 
 /// Interval to wait for sensor warmup
 const WARMUP_INTERVAL: Duration = Duration::from_millis(10);

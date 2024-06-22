@@ -10,11 +10,11 @@
 
 use core::convert::Infallible;
 
-use embedded_graphics_core::{
-    draw_target::DrawTarget,
-    geometry::{OriginDimensions, Point, Size},
-    Pixel,
-};
+use embedded_graphics_core::draw_target::DrawTarget;
+use embedded_graphics_core::geometry::OriginDimensions;
+use embedded_graphics_core::geometry::Point;
+use embedded_graphics_core::geometry::Size;
+use embedded_graphics_core::Pixel;
 
 use crate::Color;
 

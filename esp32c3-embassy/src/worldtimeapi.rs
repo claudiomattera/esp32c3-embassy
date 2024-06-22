@@ -7,13 +7,19 @@
 //! Client for World Time API
 
 use core::num::ParseIntError;
-use core::str::{from_utf8, Utf8Error};
+use core::str::from_utf8;
+use core::str::Utf8Error;
 
-use log::{debug, trace};
+use log::debug;
+use log::trace;
 
-use time::{error::ComponentRange as TimeComponentRangeError, OffsetDateTime, UtcOffset};
+use time::error::ComponentRange as TimeComponentRangeError;
+use time::OffsetDateTime;
+use time::UtcOffset;
 
-use crate::http::{Client as HttpClient, ClientTrait as HttpClientTrait, Error as HttpError};
+use crate::http::Client as HttpClient;
+use crate::http::ClientTrait as HttpClientTrait;
+use crate::http::Error as HttpError;
 
 /// Extend an HTTP client for querying World Time API
 pub trait WorldTimeApiClient: HttpClientTrait {

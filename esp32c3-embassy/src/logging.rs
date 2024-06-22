@@ -8,12 +8,18 @@
 
 use core::str::FromStr;
 
-use log::{
-    max_level, set_logger_racy, set_max_level_racy, trace, Level, LevelFilter, Log, Metadata,
-    Record,
-};
+use log::max_level;
+use log::set_logger_racy;
+use log::set_max_level_racy;
+use log::trace;
+use log::Level;
+use log::LevelFilter;
+use log::Log;
+use log::Metadata;
+use log::Record;
 
-use esp_println::{println, Printer};
+use esp_println::println;
+use esp_println::Printer;
 
 /// Setup logging
 ///
