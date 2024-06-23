@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use stable Rust toolchain
 - Replace `static mut` with `SyncUnsafeCell`
 - Update `reqwless` to version 0.12
+- Update other dependencies to their latest versions
 
 
 ## [0.1.0] - 2024-03-16
