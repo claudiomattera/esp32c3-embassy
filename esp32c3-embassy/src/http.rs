@@ -83,7 +83,7 @@ impl ClientTrait for Client {
         debug!("Send HTTPs request to {url}");
 
         debug!("Create DNS socket");
-        let dns_socket = DnsSocket::new(&self.stack);
+        let dns_socket = DnsSocket::new(self.stack);
 
         let seed = self.rng.next_u64();
         let tls_config = TlsConfig::new(
@@ -94,7 +94,7 @@ impl ClientTrait for Client {
         );
 
         debug!("Create TCP client");
-        let tcp_client = TcpClient::new(&self.stack, &self.tcp_client_state);
+        let tcp_client = TcpClient::new(self.stack, &self.tcp_client_state);
 
         debug!("Create HTTP client");
         let mut client = HttpClient::new_with_tls(&tcp_client, &dns_socket, tls_config);

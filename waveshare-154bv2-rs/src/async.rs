@@ -6,7 +6,7 @@
 // https://opensource.org/licenses/MIT
 // https://opensource.org/licenses/Apache-2.0
 
-//!
+//! Async display
 
 use log::debug;
 use log::log_enabled;
