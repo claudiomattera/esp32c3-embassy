@@ -182,9 +182,9 @@ dependencies = [
 
 [[package]]
 name = "buffered-io"
-version = "0.5.0"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "562975127ad66dbe4b9d990aaa8e9eaa13189e04e31693b5c969e31eb02b34ae"
+checksum = "bf0dfc813c9291040651fda6c77667635f9c98f863007d8d600bcfa261a4a8fc"
 dependencies = [
  "embedded-io",
  "embedded-io-async",
@@ -674,7 +674,6 @@ dependencies = [
  "heapless 0.8.0",
  "hkdf",
  "hmac",
- "log",
  "p256",
  "rand_core",
  "sha2",
@@ -916,7 +915,6 @@ dependencies = [
  "embedded-hal-bus",
  "embedded-io-async",
  "embedded-layout",
- "embedded-tls",
  "esp-backtrace",
  "esp-hal",
  "esp-hal-embassy",
@@ -1523,9 +1521,9 @@ checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
 
 [[package]]
 name = "reqwless"
-version = "0.11.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10f238db3a2f18fbe0aace4c28c3c673f5cfb584ffc3684d6327ed287a6c86e4"
+checksum = "04ff2a18de08295a6ae5fcdfa2c888e348f526c84c2f011479de4808b14871ea"
 dependencies = [
  "base64",
  "buffered-io",

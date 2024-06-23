@@ -75,11 +75,8 @@ heapless = { version = "0.8", default-features = false }
 # Time
 time = { version = "0.3", default-features = false }
 
-# TLS
-embedded-tls = { version = "0.17", default-features = false }
-
 # HTTP
-reqwless = { version = "0.11", default-features = false }
+reqwless = { version = "0.12", default-features = false }
 
 # Random
 rand_core = { version = "0.6", default-features = false }

@@ -57,9 +57,6 @@ heapless = { workspace = true }
 # Time
 time = { workspace = true }
 
-# TLS
-embedded-tls = { workspace = true, features = ["log"] }
-
 # HTTP
 reqwless = { workspace = true, features = ["embedded-tls", "log"] }
 
