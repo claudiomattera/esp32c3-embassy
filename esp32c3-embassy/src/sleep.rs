@@ -10,7 +10,10 @@ use core::time::Duration;
 
 use log::info;
 
-use esp_hal::{peripherals::LPWR, rtc_cntl::sleep::TimerWakeupSource, Delay, Rtc};
+use esp_hal::delay::Delay;
+use esp_hal::peripherals::LPWR;
+use esp_hal::rtc_cntl::sleep::TimerWakeupSource;
+use esp_hal::rtc_cntl::Rtc;
 
 /// Enter deep sleep for the specified interval
 ///
@@ -19,7 +22,7 @@ use esp_hal::{peripherals::LPWR, rtc_cntl::sleep::TimerWakeupSource, Delay, Rtc}
 pub fn enter_deep(rtc_cntl: LPWR, mut delay: Delay, interval: Duration) -> ! {
     let wakeup_source = TimerWakeupSource::new(interval);
 
-    let mut rtc = Rtc::new(rtc_cntl);
+    let mut rtc = Rtc::new(rtc_cntl, None);
 
     info!("Entering deep sleep for {interval:?}");
     rtc.sleep_deep(&[&wakeup_source], &mut delay);

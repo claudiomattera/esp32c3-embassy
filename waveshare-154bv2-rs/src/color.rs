@@ -8,10 +8,11 @@
 
 //! A color that can have three values
 
-use embedded_graphics_core::{
-    pixelcolor::{raw::RawU2, BinaryColor, PixelColor, Rgb888},
-    prelude::RawData,
-};
+use embedded_graphics_core::pixelcolor::raw::RawU2;
+use embedded_graphics_core::pixelcolor::BinaryColor;
+use embedded_graphics_core::pixelcolor::PixelColor;
+use embedded_graphics_core::pixelcolor::Rgb888;
+use embedded_graphics_core::prelude::RawData;
 
 /// A tri-color
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

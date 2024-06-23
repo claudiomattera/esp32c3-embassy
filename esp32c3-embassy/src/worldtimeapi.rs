@@ -7,13 +7,19 @@
 //! Client for World Time API
 
 use core::num::ParseIntError;
-use core::str::{from_utf8, Utf8Error};
+use core::str::from_utf8;
+use core::str::Utf8Error;
 
-use log::{debug, trace};
+use log::debug;
+use log::trace;
 
-use time::{error::ComponentRange as TimeComponentRangeError, OffsetDateTime, UtcOffset};
+use time::error::ComponentRange as TimeComponentRangeError;
+use time::OffsetDateTime;
+use time::UtcOffset;
 
-use crate::http::{Client as HttpClient, ClientTrait as HttpClientTrait, Error as HttpError};
+use crate::http::Client as HttpClient;
+use crate::http::ClientTrait as HttpClientTrait;
+use crate::http::Error as HttpError;
 
 /// Extend an HTTP client for querying World Time API
 pub trait WorldTimeApiClient: HttpClientTrait {
@@ -73,16 +79,16 @@ pub enum Error {
     Unknown,
 
     /// A time component is out of range
-    TimeComponentRange(TimeComponentRangeError),
+    TimeComponentRange(#[allow(unused)] TimeComponentRangeError),
 
     /// Error from HTTP client
-    Http(HttpError),
+    Http(#[allow(unused)] HttpError),
 
     /// An integer valued returned by the server could not be parsed
-    ParseInt(ParseIntError),
+    ParseInt(#[allow(unused)] ParseIntError),
 
     /// Text returned by the server is not valid UTF-8
-    Utf8(Utf8Error),
+    Utf8(#[allow(unused)] Utf8Error),
 }
 
 impl From<TimeComponentRangeError> for Error {

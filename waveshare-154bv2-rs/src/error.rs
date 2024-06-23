@@ -9,10 +9,13 @@
 //! Data structures and functions for error handling
 
 #[cfg(any(feature = "async", feature = "blocking"))]
-use embedded_hal::{
-    digital::{Error as DigitalError, ErrorKind as DigitalErrorKind},
-    spi::{Error as SpiError, ErrorKind as SpiErrorKind},
-};
+use embedded_hal::digital::Error as DigitalError;
+#[cfg(any(feature = "async", feature = "blocking"))]
+use embedded_hal::digital::ErrorKind as DigitalErrorKind;
+#[cfg(any(feature = "async", feature = "blocking"))]
+use embedded_hal::spi::Error as SpiError;
+#[cfg(any(feature = "async", feature = "blocking"))]
+use embedded_hal::spi::ErrorKind as SpiErrorKind;
 
 /// An error
 #[derive(Debug, PartialEq)]

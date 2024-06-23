@@ -33,7 +33,7 @@ pub const WRITE_RAM_BLACK: u8 = 0x24;
 pub const WRITE_RAM_CHROMATIC: u8 = 0x26;
 
 /// Command for border waveform control
-pub const BORDER_WAVEFORM_CONTROL: u8 = 0x3C;
+pub const BORDER_WAVEFORM_CONTROL: u8 = 0x3c;
 
 /// Command for setting RAM X address start and end position
 pub const SET_RAM_X_ADDRESS_START_END_POSITION: u8 = 0x44;
@@ -42,7 +42,7 @@ pub const SET_RAM_X_ADDRESS_START_END_POSITION: u8 = 0x44;
 pub const SET_RAM_Y_ADDRESS_START_END_POSITION: u8 = 0x45;
 
 /// Command for setting RAM X address counter
-pub const SET_RAM_X_ADDRESS_COUNTER: u8 = 0x4E;
+pub const SET_RAM_X_ADDRESS_COUNTER: u8 = 0x4e;
 
 /// Command for setting RAM Y address counter
-pub const SET_RAM_Y_ADDRESS_COUNTER: u8 = 0x4F;
+pub const SET_RAM_Y_ADDRESS_COUNTER: u8 = 0x4f;

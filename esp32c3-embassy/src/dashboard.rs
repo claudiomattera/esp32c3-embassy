@@ -7,27 +7,28 @@
 //! Dashboard for E-INK screen
 
 use core::convert::Infallible;
-use core::fmt::{Error as FmtError, Write as _};
+use core::fmt::Error as FmtError;
+use core::fmt::Write as _;
 
-use embedded_graphics::{
-    mono_font::{iso_8859_1::FONT_10X20 as FONT, MonoTextStyle, MonoTextStyleBuilder},
-    prelude::*,
-    text::Text,
-};
+use embedded_graphics::mono_font::iso_8859_1::FONT_10X20 as FONT;
+use embedded_graphics::mono_font::MonoTextStyle;
+use embedded_graphics::mono_font::MonoTextStyleBuilder;
+use embedded_graphics::prelude::*;
+use embedded_graphics::text::Text;
 
-use embedded_layout::{
-    align::Align,
-    layout::linear::LinearLayout,
-    prelude::{horizontal, vertical, Chain},
-    View,
-};
+use embedded_layout::align::Align;
+use embedded_layout::layout::linear::LinearLayout;
+use embedded_layout::prelude::horizontal;
+use embedded_layout::prelude::vertical;
+use embedded_layout::prelude::Chain;
+use embedded_layout::View;
 
-use uom::si::{
-    f32::{Pressure, Ratio as Humidity, ThermodynamicTemperature as Temperature},
-    pressure::hectopascal,
-    ratio::percent,
-    thermodynamic_temperature::degree_celsius,
-};
+use uom::si::f32::Pressure;
+use uom::si::f32::Ratio as Humidity;
+use uom::si::f32::ThermodynamicTemperature as Temperature;
+use uom::si::pressure::hectopascal;
+use uom::si::ratio::percent;
+use uom::si::thermodynamic_temperature::degree_celsius;
 
 use heapless::String;
 
@@ -150,8 +151,7 @@ pub enum Error {
     Impossible(Infallible),
 
     /// An error occurred while formatting a string
-    #[allow(unused)]
-    Fmt(FmtError),
+    Fmt(#[allow(unused)] FmtError),
 }
 
 impl From<FmtError> for Error {

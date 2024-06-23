@@ -8,44 +8,57 @@
 
 #![no_std]
 #![no_main]
-#![feature(type_alias_impl_trait)]
-#![allow(static_mut_refs)]
 
 use core::convert::Infallible;
 
-use log::{error, info};
+use log::error;
+use log::info;
 
 use embassy_executor::Spawner;
 
-use embassy_time::{Delay, Duration, Timer};
+use embassy_time::Delay;
+use embassy_time::Duration;
+use embassy_time::Timer;
 
-use embassy_sync::{blocking_mutex::raw::NoopRawMutex, channel::Channel};
+use embassy_sync::blocking_mutex::raw::NoopRawMutex;
+use embassy_sync::channel::Channel;
 
-use esp_hal::{
-    clock::ClockControl,
-    dma::{Channel0, Dma, DmaDescriptor, DmaPriority},
-    embassy,
-    i2c::I2C,
-    peripherals::{Peripherals, SPI2},
-    prelude::{_esp_hal_system_SystemExt, _fugit_RateExtU32, entry, main, ram},
-    spi::{
-        master::{
-            dma::{SpiDma, WithDmaSpi2},
-            Spi,
-        },
-        FullDuplexMode, SpiMode,
-    },
-    timer::TimerGroup,
-    Delay as EspDelay, Rng, IO,
-};
+use esp_hal::clock::ClockControl;
+use esp_hal::delay::Delay as EspDelay;
+use esp_hal::dma::Channel0;
+use esp_hal::dma::Dma;
+use esp_hal::dma::DmaDescriptor;
+use esp_hal::dma::DmaPriority;
+use esp_hal::gpio::Input;
+use esp_hal::gpio::Io;
+use esp_hal::gpio::Level;
+use esp_hal::gpio::Output;
+use esp_hal::gpio::Pull;
+use esp_hal::i2c::I2C;
+use esp_hal::peripherals::Peripherals;
+use esp_hal::peripherals::SPI2;
+use esp_hal::prelude::_fugit_RateExtU32;
+use esp_hal::prelude::entry;
+use esp_hal::prelude::main;
+use esp_hal::prelude::ram;
+use esp_hal::rng::Rng;
+use esp_hal::spi::master::dma::SpiDma;
+use esp_hal::spi::master::dma::WithDmaSpi2;
+use esp_hal::spi::master::Spi;
+use esp_hal::spi::FullDuplexMode;
+use esp_hal::spi::SpiMode;
+use esp_hal::system::SystemControl;
+use esp_hal::timer::timg::TimerGroup;
+use esp_hal::Async;
+
+use esp_hal_embassy::init as initialize_embassy;
 
 use time::OffsetDateTime;
 
-use heapless::{HistoryBuffer, String};
+use heapless::HistoryBuffer;
+use heapless::String;
 
 use embedded_hal_bus::spi::ExclusiveDevice;
-
-use embedded_hal::digital::OutputPin;
 
 use esp_backtrace as _;
 
@@ -62,14 +75,19 @@ mod dashboard;
 mod display;
 use self::display::update_task as update_display_task;
 
+mod cell;
+use self::cell::SyncUnsafeCell;
+
 mod clock;
-use self::clock::{Clock, Error as ClockError};
+use self::clock::Clock;
+use self::clock::Error as ClockError;
 
 mod http;
 use self::http::Client as HttpClient;
 
 mod domain;
-use self::domain::{Reading, Sample};
+use self::domain::Reading;
+use self::domain::Sample;
 
 mod random;
 use self::random::RngWrapper;
@@ -78,7 +96,9 @@ mod sleep;
 use self::sleep::enter_deep as enter_deep_sleep;
 
 mod wifi;
-use self::wifi::{connect as connect_to_wifi, Error as WifiError, STOP_WIFI_SIGNAL};
+use self::wifi::connect as connect_to_wifi;
+use self::wifi::Error as WifiError;
+use self::wifi::STOP_WIFI_SIGNAL;
 
 mod worldtimeapi;
 
@@ -114,14 +134,15 @@ static RX_DESCRIPTORS: StaticCell<[DmaDescriptor; DESCRIPTORS_SIZE]> = StaticCel
 /// This is a statically allocated variable and it is placed in the RTC Fast
 /// memory, which survives deep sleep.
 #[ram(rtc_fast)]
-static mut BOOT_COUNT: u32 = 0;
+static BOOT_COUNT: SyncUnsafeCell<u32> = SyncUnsafeCell::new(0);
 
 /// Stored history between deep sleep cycles
 ///
 /// This is a statically allocated variable and it is placed in the RTC Fast
 /// memory, which survives deep sleep.
 #[ram(rtc_fast)]
-static mut HISTORY: HistoryBuffer<(OffsetDateTime, Sample), 96> = HistoryBuffer::new();
+static HISTORY: SyncUnsafeCell<HistoryBuffer<(OffsetDateTime, Sample), 96>> =
+    SyncUnsafeCell::new(HistoryBuffer::new());
 
 /// Main task
 #[main]
@@ -129,22 +150,36 @@ async fn main(spawner: Spawner) {
     setup_logging();
 
     // SAFETY:
-    // There is only one thread
-    let boot_count = unsafe { &mut BOOT_COUNT };
+    // This is the only place where a mutable reference is taken
+    let boot_count: Option<&'static mut _> = unsafe { BOOT_COUNT.get().as_mut() };
+    // SAFETY:
+    // This is pointing to a valid value
+    let boot_count: &'static mut _ = unsafe { boot_count.unwrap_unchecked() };
     info!("Current boot count = {boot_count}");
     *boot_count += 1;
 
-    if let Err(error) = main_fallible(&spawner).await {
+    // SAFETY:
+    // This is the only place where a mutable reference is taken
+    let history: Option<&'static mut _> = unsafe { HISTORY.get().as_mut() };
+    // SAFETY:
+    // This is pointing to a valid value
+    let history: &'static mut _ = unsafe { history.unwrap_unchecked() };
+
+    if let Err(error) = main_fallible(&spawner, history).await {
         error!("Error while running firmware: {error:?}");
     }
 }
 
 /// Main task that can return an error
-async fn main_fallible(spawner: &Spawner) -> Result<(), Error> {
+async fn main_fallible(
+    spawner: &Spawner,
+    history: &'static mut HistoryBuffer<(OffsetDateTime, Sample), 96>,
+) -> Result<(), Error> {
     let peripherals = Peripherals::take();
-    let system = peripherals.SYSTEM.split();
+    let system = SystemControl::new(peripherals.SYSTEM);
+
     let clocks = ClockControl::max(system.clock_control).freeze();
-    embassy::init(&clocks, TimerGroup::new(peripherals.TIMG0, &clocks));
+    initialize_embassy(&clocks, TimerGroup::new_async(peripherals.TIMG0, &clocks));
 
     let rng = Rng::new(peripherals.RNG);
 
@@ -162,7 +197,7 @@ async fn main_fallible(spawner: &Spawner) -> Result<(), Error> {
             peripherals.SYSTIMER,
             rng,
             peripherals.WIFI,
-            system.radio_clock_control,
+            peripherals.RADIO_CLK,
             &clocks,
             (ssid, password),
         )
@@ -180,17 +215,17 @@ async fn main_fallible(spawner: &Spawner) -> Result<(), Error> {
 
     info!("Now is {}", clock.now()?);
 
-    let io = IO::new(peripherals.GPIO, peripherals.IO_MUX);
+    let io = Io::new(peripherals.GPIO, peripherals.IO_MUX);
 
     info!("Turn off cold LED");
-    let mut cold_led = io.pins.gpio18.into_push_pull_output();
-    cold_led.set_low()?;
+    let mut cold_led = io.pins.gpio18;
+    cold_led.set_low();
 
     info!("Create I²C bus");
     let sda = io.pins.gpio1;
     let scl = io.pins.gpio2;
 
-    let i2c = I2C::new(peripherals.I2C0, sda, scl, 25_u32.kHz(), &clocks);
+    let i2c = I2C::new_async(peripherals.I2C0, sda, scl, 25_u32.kHz(), &clocks);
 
     info!("Create SPI bus");
     let spi_bus = Spi::new(peripherals.SPI2, 25_u32.kHz(), SpiMode::Mode0, &clocks)
@@ -205,29 +240,26 @@ async fn main_fallible(spawner: &Spawner) -> Result<(), Error> {
     let dma = Dma::new(peripherals.DMA);
     let dma_channel = dma.channel0;
 
-    let spi_dma: SpiDma<'_, SPI2, Channel0, FullDuplexMode> = spi_bus.with_dma(
-        dma_channel.configure(false, descriptors, rx_descriptors, DmaPriority::Priority0),
+    let spi_dma: SpiDma<'_, SPI2, Channel0, FullDuplexMode, Async> = spi_bus.with_dma(
+        dma_channel.configure_for_async(false, descriptors, rx_descriptors, DmaPriority::Priority0),
     );
 
     info!("Create PIN for SPI Chip Select");
-    let cs = io.pins.gpio8.into_push_pull_output();
+    let cs = io.pins.gpio8;
 
     info!("Create additional PINs");
-    let busy = io.pins.gpio9.into_pull_up_input();
-    let rst = io.pins.gpio10.into_push_pull_output();
-    let dc = io.pins.gpio19.into_push_pull_output();
+    let busy = Input::new(io.pins.gpio9, Pull::Up);
+    let rst = Output::new(io.pins.gpio10, Level::Low);
+    let dc = Output::new(io.pins.gpio19, Level::Low);
 
     info!("Create SPI device");
-    let spi_device = ExclusiveDevice::new(spi_dma, cs, Delay);
+    let spi_device = ExclusiveDevice::new(spi_dma, Output::new(cs, Level::Low), Delay);
 
     info!("Create channel");
     let channel: &'static mut _ = CHANNEL.init(Channel::new());
     let receiver = channel.receiver();
     let sender = channel.sender();
 
-    // SAFETY:
-    // There is only one thread
-    let history = unsafe { &mut HISTORY };
     info!("History contains {} elements", history.len());
 
     info!("Spawn tasks");

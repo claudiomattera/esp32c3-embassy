@@ -6,15 +6,15 @@
 // https://opensource.org/licenses/MIT
 // https://opensource.org/licenses/Apache-2.0
 
-//!
+//! Underlying graphical buffer
 
 use core::convert::Infallible;
 
-use embedded_graphics_core::{
-    draw_target::DrawTarget,
-    geometry::{OriginDimensions, Point, Size},
-    Pixel,
-};
+use embedded_graphics_core::draw_target::DrawTarget;
+use embedded_graphics_core::geometry::OriginDimensions;
+use embedded_graphics_core::geometry::Point;
+use embedded_graphics_core::geometry::Size;
+use embedded_graphics_core::Pixel;
 
 use crate::Color;
 
@@ -149,19 +149,19 @@ impl<const WIDTH: usize, const HEIGHT: usize, const BYTE_SIZE: usize> DrawTarget
     }
 }
 
-///
+/// Get index and offset
 fn get_index_and_offset<const WIDTH: usize>(x: i32, y: i32) -> (usize, usize) {
     let bit_index = get_bit_index::<WIDTH>(x, y);
     get_index_and_offset_from_bit_index(bit_index)
 }
 
-///
+/// Get bit index
 #[allow(clippy::cast_sign_loss)]
 fn get_bit_index<const WIDTH: usize>(x: i32, y: i32) -> usize {
     x as usize + y as usize * WIDTH
 }
 
-///
+/// Get index and offset from bit index
 fn get_index_and_offset_from_bit_index(bit_index: usize) -> (usize, usize) {
     let index = bit_index >> 3_i32;
     let offset = bit_index & 0b0000_0111;

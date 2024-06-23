@@ -6,17 +6,20 @@
 // https://opensource.org/licenses/MIT
 // https://opensource.org/licenses/Apache-2.0
 
-//!
+//! Blocking display
 
-use log::{debug, log_enabled, trace, Level::Trace};
+use log::debug;
+use log::log_enabled;
+use log::trace;
+use log::Level::Trace;
 
-use embedded_hal::{
-    delay::DelayNs,
-    digital::{InputPin, OutputPin},
-    spi::SpiDevice,
-};
+use embedded_hal::delay::DelayNs;
+use embedded_hal::digital::InputPin;
+use embedded_hal::digital::OutputPin;
+use embedded_hal::spi::SpiDevice;
 
-use crate::{command, Error};
+use crate::command;
+use crate::Error;
 
 #[cfg(feature = "draw-target")]
 use crate::Buffer;
@@ -101,7 +104,7 @@ where
         self.send_command(command::SET_RAM_X_ADDRESS_COUNTER)?;
         self.send_data(&[0x00])?;
         self.send_command(command::SET_RAM_Y_ADDRESS_COUNTER)?;
-        self.send_data(&[0xC7])?;
+        self.send_data(&[0xc7])?;
         self.send_data(&[0x00])?;
 
         Ok(())
@@ -127,7 +130,7 @@ where
     fn set_driver_output_control(&mut self) -> Result<(), Error> {
         self.wait_until_idle()?;
         self.send_command(command::DRIVER_OUTPUT_CONTROL)?;
-        self.send_data(&[0xC7, 0x00, 0x01])?;
+        self.send_data(&[0xc7, 0x00, 0x01])?;
 
         Ok(())
     }
@@ -160,7 +163,7 @@ where
         let [y_start_0, y_start_1] = y_start.to_le_bytes();
         let [y_end_0, y_end_1] = y_end.to_le_bytes();
 
-        assert_eq!(y_start_0, 0xC7); // 0xC7 = 199 = 200 - 1
+        assert_eq!(y_start_0, 0xc7); // 0xC7 = 199 = 200 - 1
         assert_eq!(y_start_1, 0x00);
 
         assert_eq!(y_end_0, 0x00);
@@ -303,7 +306,7 @@ where
     fn refresh(&mut self) -> Result<(), Error> {
         debug!("Refresh display");
         self.send_command(command::DISPLAY_UPDATE_CONTROL_2)?;
-        self.send_data(&[0xF7])?;
+        self.send_data(&[0xf7])?;
 
         self.send_command(command::MASTER_ACTIVATION)?;
 

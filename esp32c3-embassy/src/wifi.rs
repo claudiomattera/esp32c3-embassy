@@ -6,30 +6,39 @@
 
 //! Functions and task for WiFi connection
 
-use log::{debug, error, info};
+use log::debug;
+use log::error;
+use log::info;
 
 use embassy_executor::Spawner;
 
-use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
+use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
+use embassy_sync::signal::Signal;
 
-use esp_wifi::{
-    wifi::{
-        ClientConfiguration, Configuration, WifiController, WifiDevice, WifiError as EspWifiError,
-        WifiEvent, WifiStaDevice, WifiState,
-    },
-    EspWifiInitFor, InitializationError as WifiInitializationError,
-};
+use esp_wifi::wifi::ClientConfiguration;
+use esp_wifi::wifi::Configuration;
+use esp_wifi::wifi::WifiController;
+use esp_wifi::wifi::WifiDevice;
+use esp_wifi::wifi::WifiError as EspWifiError;
+use esp_wifi::wifi::WifiEvent;
+use esp_wifi::wifi::WifiStaDevice;
+use esp_wifi::wifi::WifiState;
+use esp_wifi::EspWifiInitFor;
+use esp_wifi::InitializationError as WifiInitializationError;
 
-use embassy_net::{Config, DhcpConfig, Stack, StackResources};
-use embassy_time::{Duration, Timer};
+use embassy_net::Config;
+use embassy_net::DhcpConfig;
+use embassy_net::Stack;
+use embassy_net::StackResources;
+use embassy_time::Duration;
+use embassy_time::Timer;
 
-use esp_hal::{
-    clock::Clocks,
-    peripherals::{SYSTIMER, WIFI},
-    system::RadioClockControl,
-    systimer::SystemTimer,
-    Rng,
-};
+use esp_hal::clock::Clocks;
+use esp_hal::peripherals::RADIO_CLK;
+use esp_hal::peripherals::SYSTIMER;
+use esp_hal::peripherals::WIFI;
+use esp_hal::rng::Rng;
+use esp_hal::timer::systimer::SystemTimer;
 
 use heapless::String;
 
@@ -54,7 +63,7 @@ pub async fn connect(
     systimer: SYSTIMER,
     rng: Rng,
     wifi: WIFI,
-    radio_clock_control: RadioClockControl,
+    radio_clock_control: RADIO_CLK,
     clocks: &Clocks<'_>,
     (ssid, password): (String<32>, String<64>),
 ) -> Result<&'static Stack<WifiDevice<'static, WifiStaDevice>>, Error> {
@@ -172,10 +181,10 @@ async fn connection_fallible(
 #[derive(Debug)]
 pub enum Error {
     /// Error during WiFi initialization
-    WifiInitialization(WifiInitializationError),
+    WifiInitialization(#[allow(unused)] WifiInitializationError),
 
     /// Error during WiFi operation
-    Wifi(EspWifiError),
+    Wifi(#[allow(unused)] EspWifiError),
 }
 
 impl From<WifiInitializationError> for Error {

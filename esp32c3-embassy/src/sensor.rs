@@ -6,24 +6,34 @@
 
 //! Task for reading sensor value
 
-use log::{error, info, warn};
+use log::error;
+use log::info;
+use log::warn;
 
-use embassy_time::{Delay, Duration, Timer};
+use embassy_time::Delay;
+use embassy_time::Duration;
+use embassy_time::Timer;
 
-use embassy_sync::{blocking_mutex::raw::NoopRawMutex, channel::Sender};
+use embassy_sync::blocking_mutex::raw::NoopRawMutex;
+use embassy_sync::channel::Sender;
 
-use esp_hal::{
-    i2c::{Error as I2cError, I2C},
-    peripherals::I2C0,
-    Rng,
-};
+use esp_hal::i2c::Error as I2cError;
+use esp_hal::i2c::I2C;
+use esp_hal::peripherals::I2C0;
+use esp_hal::rng::Rng;
+use esp_hal::Async;
 
-use bme280_rs::{AsyncBme280, Configuration, Oversampling, Sample as Bme280Sample, SensorMode};
+use bme280_rs::AsyncBme280;
+use bme280_rs::Configuration;
+use bme280_rs::Oversampling;
+use bme280_rs::Sample as Bme280Sample;
+use bme280_rs::SensorMode;
 
-use crate::{
-    clock::{Clock, Error as ClockError},
-    domain::{Error as DomainError, Reading, Sample},
-};
+use crate::clock::Clock;
+use crate::clock::Error as ClockError;
+use crate::domain::Error as DomainError;
+use crate::domain::Reading;
+use crate::domain::Sample;
 
 /// Interval to wait for sensor warmup
 const WARMUP_INTERVAL: Duration = Duration::from_millis(10);
@@ -31,7 +41,7 @@ const WARMUP_INTERVAL: Duration = Duration::from_millis(10);
 /// Task for sampling sensor
 #[embassy_executor::task]
 pub async fn sample_task(
-    i2c: I2C<'static, I2C0>,
+    i2c: I2C<'static, I2C0, Async>,
     mut rng: Rng,
     sender: Sender<'static, NoopRawMutex, Reading, 3>,
     clock: Clock,
@@ -63,7 +73,7 @@ pub async fn sample_task(
 
 /// Sample sensor and send reading to receiver
 async fn sample_and_send(
-    sensor: &mut AsyncBme280<I2C<'static, I2C0>, Delay>,
+    sensor: &mut AsyncBme280<I2C<'static, I2C0, Async>, Delay>,
     rng: &mut Rng,
     sender: &Sender<'static, NoopRawMutex, Reading, 3>,
     clock: &Clock,
@@ -91,7 +101,9 @@ async fn sample_and_send(
 }
 
 /// Initialize sensor
-async fn initialize(bme280: &mut AsyncBme280<I2C<'static, I2C0>, Delay>) -> Result<(), I2cError> {
+async fn initialize(
+    bme280: &mut AsyncBme280<I2C<'static, I2C0, Async>, Delay>,
+) -> Result<(), I2cError> {
     info!("Initialize");
     bme280.init().await?;
 
@@ -112,16 +124,13 @@ async fn initialize(bme280: &mut AsyncBme280<I2C<'static, I2C0>, Delay>) -> Resu
 #[derive(Debug)]
 enum SensorError {
     /// Error from clock
-    #[allow(unused)]
-    Clock(ClockError),
+    Clock(#[allow(unused)] ClockError),
 
     /// Error from domain
-    #[allow(unused)]
-    Domain(DomainError),
+    Domain(#[allow(unused)] DomainError),
 
     /// Error from I²C bus
-    #[allow(unused)]
-    I2c(I2cError),
+    I2c(#[allow(unused)] I2cError),
 }
 
 impl From<ClockError> for SensorError {

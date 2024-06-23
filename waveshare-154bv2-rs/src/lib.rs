@@ -26,7 +26,11 @@ mod command;
 #[cfg(feature = "draw-target")]
 mod buffer;
 #[cfg(feature = "draw-target")]
-pub use self::buffer::{Buffer, Epd1in54Buffer, Rotation};
+pub use self::buffer::Buffer;
+#[cfg(feature = "draw-target")]
+pub use self::buffer::Epd1in54Buffer;
+#[cfg(feature = "draw-target")]
+pub use self::buffer::Rotation;
 
 #[cfg(feature = "draw-target")]
 mod color;

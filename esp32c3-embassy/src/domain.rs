@@ -6,9 +6,11 @@
 
 //! Domain types
 
-use esp_hal::Rng;
+use esp_hal::rng::Rng;
 
-use uom::si::f32::{Pressure, Ratio as Humidity, ThermodynamicTemperature as Temperature};
+use uom::si::f32::Pressure;
+use uom::si::f32::Ratio as Humidity;
+use uom::si::f32::ThermodynamicTemperature as Temperature;
 
 use time::OffsetDateTime;
 

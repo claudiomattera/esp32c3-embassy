@@ -19,8 +19,8 @@ In particular:
 
 * It uses [Embassy][embassy] as a general framework, and makes everything async, including communicating with sensor and display over I²C and SPI with [`embedded-hal-async`][embedded-hal-async].
 * It is implemented on bare metal with `no_std` and without `alloc`.
-* It is up-to-date with the latest crate versions (as of 2024-03-16).
-* It uses [`reqwless`][reqwless] for HTTP requests, and [`embedded-tls`][embedded-tls] for TLS.
+* It is up-to-date with the latest crate versions (as of 2024-06-23).
+* It uses [`reqwless`][reqwless] for HTTP requests and TLS.
 
 It is mostly meant as a reference / example / starting point.
 The Rust + ESP32 + Embassy ecosystem is still very young, and I had a hard time putting everything together to make a complete application.
@@ -30,7 +30,6 @@ Hopefully this project will be useful to other beginners :)
 [embassy]: https://embassy.dev/
 [embedded-hal-async]: https://crates.io/crates/embedded-hal-async
 [reqwless]: https://crates.io/crates/reqwless
-[embedded-tls]: https://crates.io/crates/embedded-tls
 
 
 Architecture

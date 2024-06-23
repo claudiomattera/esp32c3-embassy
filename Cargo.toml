@@ -5,7 +5,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Claudio Mattera <dev@claudiomattera.it>"]
 edition = "2021"
 readme = "README.md"
@@ -36,7 +36,7 @@ exclude = [
 [workspace.dependencies]
 # Embassy
 embassy-executor = { version = "0.5", default-features = false }
-embassy-sync = { version = "0.5", default-features = false }
+embassy-sync = { version = "0.6", default-features = false }
 embassy-time = { version = "0.3", default-features = false }
 embassy-net = { version = "0.4", default-features = false }
 
@@ -47,10 +47,11 @@ embedded-hal-bus = { version = "0.1", default-features = false }
 embedded-io-async = { version = "0.6", default-features = false }
 
 # ESP specifics
-esp-hal = { version = "0.16", default-features = false }
-esp-backtrace = { version = "0.11", default-features = false }
+esp-hal = { version = "0.18", default-features = false }
+esp-hal-embassy = { version = "0.1", default-features = false }
+esp-backtrace = { version = "0.12", default-features = false }
 esp-println = { version = "0.9", default-features = false }
-esp-wifi = { version = "0.4", default-features = false }
+esp-wifi = { version = "0.6", default-features = false }
 
 # Logging
 log = { version = "0.4", default-features = false }
@@ -74,11 +75,8 @@ heapless = { version = "0.8", default-features = false }
 # Time
 time = { version = "0.3", default-features = false }
 
-# TLS
-embedded-tls = { version = "0.17", default-features = false }
-
 # HTTP
-reqwless = { version = "0.11", default-features = false }
+reqwless = { version = "0.12", default-features = false }
 
 # Random
 rand_core = { version = "0.6", default-features = false }

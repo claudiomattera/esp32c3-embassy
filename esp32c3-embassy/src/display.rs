@@ -6,49 +6,62 @@
 
 //! Task for reporting sensor value on a WaveShare E-INK display
 
-use log::{error, info};
+use log::error;
+use log::info;
 
 use embassy_time::Delay;
 
-use embassy_sync::{blocking_mutex::raw::NoopRawMutex, channel::Receiver};
+use embassy_sync::blocking_mutex::raw::NoopRawMutex;
+use embassy_sync::channel::Receiver;
 
 use embedded_hal_bus::spi::ExclusiveDevice;
 
-use embedded_hal_async::{delay::DelayNs, digital::Wait, spi::SpiDevice};
+use embedded_hal_async::delay::DelayNs;
+use embedded_hal_async::digital::Wait;
+use embedded_hal_async::spi::SpiDevice;
 
 use embedded_hal::digital::OutputPin;
 
 use time::OffsetDateTime;
 
-use esp_hal::{
-    dma::Channel0,
-    gpio::{Gpio10, Gpio19, Gpio8, Gpio9, Input, Output, PullUp, PushPull},
-    peripherals::SPI2,
-    spi::{master::dma::SpiDma, FullDuplexMode},
-};
+use esp_hal::dma::Channel0;
+use esp_hal::gpio::Gpio10;
+use esp_hal::gpio::Gpio19;
+use esp_hal::gpio::Gpio8;
+use esp_hal::gpio::Gpio9;
+use esp_hal::gpio::Input;
+use esp_hal::gpio::Output;
+use esp_hal::peripherals::SPI2;
+use esp_hal::spi::master::dma::SpiDma;
+use esp_hal::spi::FullDuplexMode;
+use esp_hal::Async;
 
 use heapless::HistoryBuffer;
 
-use uom::si::{pressure::hectopascal, ratio::percent, thermodynamic_temperature::degree_celsius};
+use uom::si::pressure::hectopascal;
+use uom::si::ratio::percent;
+use uom::si::thermodynamic_temperature::degree_celsius;
 
-use waveshare_154bv2_rs::{AsyncDisplay, Buffer, Error as DisplayError};
+use waveshare_154bv2_rs::AsyncDisplay;
+use waveshare_154bv2_rs::Buffer;
+use waveshare_154bv2_rs::Error as DisplayError;
 
-use crate::{
-    dashboard::{draw as draw_dashboard, Error as DashboardError},
-    domain::{Reading, Sample},
-};
+use crate::dashboard::draw as draw_dashboard;
+use crate::dashboard::Error as DashboardError;
+use crate::domain::Reading;
+use crate::domain::Sample;
 
 /// Task for displaying samples
 #[embassy_executor::task]
 pub async fn update_task(
     spi_device: ExclusiveDevice<
-        SpiDma<'static, SPI2, Channel0, FullDuplexMode>,
-        Gpio8<Output<PushPull>>,
+        SpiDma<'static, SPI2, Channel0, FullDuplexMode, Async>,
+        Output<'static, Gpio8>,
         Delay,
     >,
-    busy: Gpio9<Input<PullUp>>,
-    rst: Gpio10<Output<PushPull>>,
-    dc: Gpio19<Output<PushPull>>,
+    busy: Input<'static, Gpio9>,
+    rst: Output<'static, Gpio10>,
+    dc: Output<'static, Gpio19>,
     receiver: Receiver<'static, NoopRawMutex, Reading, 3>,
     history: &'static mut HistoryBuffer<(OffsetDateTime, Sample), 96>,
 ) {
@@ -119,12 +132,10 @@ fn log_sample(sample: &Sample) {
 #[derive(Debug)]
 enum ReportError {
     /// An error occurred while updating the display
-    #[allow(unused)]
-    Display(DisplayError),
+    Display(#[allow(unused)] DisplayError),
 
     /// An error occurred while drawing the dashboard
-    #[allow(unused)]
-    Dashboard(DashboardError),
+    Dashboard(#[allow(unused)] DashboardError),
 }
 
 impl From<DisplayError> for ReportError {

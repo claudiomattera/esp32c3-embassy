@@ -6,28 +6,27 @@
 
 //! HTTP client
 
-use core::fmt::Error as FormatError;
-use core::num::ParseIntError;
+use embassy_net::dns::DnsSocket;
+use embassy_net::dns::Error as DnsError;
+use embassy_net::tcp::client::TcpClient;
+use embassy_net::tcp::client::TcpClientState;
+use embassy_net::tcp::ConnectError as TcpConnectError;
+use embassy_net::tcp::Error as TcpError;
+use embassy_net::Stack;
+use log::debug;
 
-use log::{debug, trace, warn};
+use esp_wifi::wifi::WifiDevice;
+use esp_wifi::wifi::WifiStaDevice;
 
-use embassy_net::{
-    dns::{DnsQueryType, Error as DnsError},
-    tcp::{ConnectError as TcpConnectError, Error as TcpError, TcpSocket},
-    IpAddress, Stack,
-};
-
-use esp_wifi::wifi::{WifiDevice, WifiStaDevice};
-
-use embedded_tls::{Aes128GcmSha256, NoVerify, TlsConfig, TlsConnection, TlsContext, TlsError};
-
-use reqwless::{
-    request::{Method, Request, RequestBuilder},
-    response::Response,
-    Error as ReqlessError,
-};
+use reqwless::client::HttpClient;
+use reqwless::client::TlsConfig;
+use reqwless::client::TlsVerify;
+use reqwless::request::Method;
+use reqwless::Error as ReqlessError;
 
 use heapless::Vec;
+
+use rand_core::RngCore as _;
 
 use crate::RngWrapper;
 
@@ -51,11 +50,8 @@ pub struct Client {
     /// Random numbers generator
     rng: RngWrapper,
 
-    /// Buffer for received TCP data
-    rx_buffer: [u8; 4096],
-
-    /// Buffer for transmitted TCP data
-    tx_buffer: [u8; 4096],
+    /// TCP client state
+    tcp_client_state: TcpClientState<1, 4096, 4096>,
 
     /// Buffer for received TLS data
     read_record_buffer: [u8; 16640],
@@ -67,195 +63,79 @@ pub struct Client {
 impl Client {
     /// Create a new client
     pub fn new(stack: &'static Stack<WifiDevice<'static, WifiStaDevice>>, rng: RngWrapper) -> Self {
+        debug!("Create TCP client state");
+        let tcp_client_state = TcpClientState::<1, 4096, 4096>::new();
+
         Self {
             stack,
             rng,
 
-            rx_buffer: [0_u8; 4096],
-            tx_buffer: [0_u8; 4096],
+            tcp_client_state,
 
             read_record_buffer: [0_u8; 16640],
             write_record_buffer: [0_u8; 16640],
         }
     }
-
-    /// Send a plain HTTP request
-    async fn send_plain_http_request(
-        &mut self,
-        url: &str,
-        host: &str,
-        port: u16,
-        path: &str,
-    ) -> Result<Vec<u8, RESPONSE_SIZE>, Error> {
-        debug!("Send plain HTTP request to path {path} at host {host}:{port}");
-
-        let ip_address = self.resolve(host).await?;
-        let remote_endpoint = (ip_address, port);
-
-        debug!("Create TCP socket");
-        let mut socket = TcpSocket::new(self.stack, &mut self.rx_buffer, &mut self.tx_buffer);
-        socket.set_timeout(Some(embassy_time::Duration::from_secs(10)));
-
-        debug!("Connect to HTTP server");
-        socket.connect(remote_endpoint).await?;
-        debug!("Connected to HTTP server");
-
-        let request = Request::get(url).build();
-        request.write(&mut socket).await?;
-
-        let mut headers_buf = [0_u8; 1024];
-        let mut buf = [0_u8; 4096];
-        let response = Response::read(&mut socket, Method::GET, &mut headers_buf).await?;
-
-        debug!("Response status: {:?}", response.status);
-
-        let total_length = response.body().reader().read_to_end(&mut buf).await?;
-
-        debug!("Close TCP socket");
-        socket.close();
-
-        debug!("Read {} bytes", total_length);
-
-        let output = Vec::<u8, RESPONSE_SIZE>::from_slice(&buf[..total_length])
-            .map_err(|()| Error::ResponseTooLarge)?;
-
-        Ok(output)
-    }
-
-    /// Send an HTTPS request
-    async fn send_https_request(
-        &mut self,
-        url: &str,
-        host: &str,
-        port: u16,
-        path: &str,
-    ) -> Result<Vec<u8, RESPONSE_SIZE>, Error> {
-        debug!("Send HTTPs request to path {path} at host {host}:{port}");
-
-        let ip_address = self.resolve(host).await?;
-        let remote_endpoint = (ip_address, port);
-
-        let mut socket = TcpSocket::new(self.stack, &mut self.rx_buffer, &mut self.tx_buffer);
-        socket.set_timeout(Some(embassy_time::Duration::from_secs(10)));
-
-        debug!("Connect to HTTP server");
-        socket.connect(remote_endpoint).await?;
-        debug!("Connected to HTTP server");
-
-        let config: TlsConfig<Aes128GcmSha256> = TlsConfig::new()
-            .with_server_name(host)
-            .enable_rsa_signatures();
-        let mut tls = TlsConnection::new(
-            socket,
-            &mut self.read_record_buffer,
-            &mut self.write_record_buffer,
-        );
-
-        debug!("Perform TLS handshake");
-        tls.open::<_, NoVerify>(TlsContext::new(&config, &mut self.rng))
-            .await?;
-        debug!("TLS handshake succeeded");
-
-        let request = Request::get(url).build();
-        request.write(&mut tls).await?;
-
-        let mut headers_buf = [0_u8; 1024];
-        let mut buf = [0_u8; 4096];
-        let response = Response::read(&mut tls, Method::GET, &mut headers_buf).await?;
-
-        debug!("Response status: {:?}", response.status);
-
-        let total_length = response.body().reader().read_to_end(&mut buf).await?;
-
-        debug!("Close TLS wrapper");
-        let mut socket = match tls.close().await {
-            Ok(socket) => socket,
-            Err((socket, error)) => {
-                warn!("Cannot close TLS wrapper: {error:?}");
-                socket
-            }
-        };
-
-        debug!("Close TCP socket");
-        socket.close();
-
-        debug!("Read {} bytes", total_length);
-
-        let output = Vec::<u8, RESPONSE_SIZE>::from_slice(&buf[..total_length])
-            .map_err(|()| Error::ResponseTooLarge)?;
-
-        Ok(output)
-    }
-
-    /// Resolve a hostname to an IP address through DNS
-    async fn resolve(&mut self, host: &str) -> Result<IpAddress, Error> {
-        let mut ip_addresses = self.stack.dns_query(host, DnsQueryType::A).await?;
-        let ip_address = ip_addresses.pop().ok_or(Error::DnsLookup)?;
-        debug!("Host {host} resolved to {ip_address}");
-        Ok(ip_address)
-    }
 }
 
 impl ClientTrait for Client {
     async fn send_request(&mut self, url: &str) -> Result<Vec<u8, RESPONSE_SIZE>, Error> {
-        if let Some(rest) = url.strip_prefix("https://") {
-            trace!("Rest: {rest}");
-            let (host_and_port, path) = rest.split_once('/').unwrap_or((rest, ""));
-            trace!("Host and port: {host_and_port}, path: {path}");
-            let (host, port) = host_and_port
-                .split_once(':')
-                .unwrap_or((host_and_port, "443"));
-            trace!("Host: {host}, port: {port}, path: {path}");
-            let port = port.parse::<u16>().map_err(Error::PortParse)?;
-            self.send_https_request(url, host, port, path).await
-        } else if let Some(rest) = url.strip_prefix("http://") {
-            trace!("Rest: {rest}");
-            let (host_and_port, path) = rest.split_once('/').unwrap_or((rest, ""));
-            trace!("Host and port: {host_and_port}, path: {path}");
-            let (host, port) = host_and_port
-                .split_once(':')
-                .unwrap_or((host_and_port, "80"));
-            trace!("Host: {host}, port: {port}, path: {path}");
-            let port = port.parse::<u16>().map_err(Error::PortParse)?;
-            self.send_plain_http_request(url, host, port, path).await
-        } else {
-            Err(Error::UnsupportedScheme)
-        }
+        debug!("Send HTTPs request to {url}");
+
+        debug!("Create DNS socket");
+        let dns_socket = DnsSocket::new(self.stack);
+
+        let seed = self.rng.next_u64();
+        let tls_config = TlsConfig::new(
+            seed,
+            &mut self.read_record_buffer,
+            &mut self.write_record_buffer,
+            TlsVerify::None,
+        );
+
+        debug!("Create TCP client");
+        let tcp_client = TcpClient::new(self.stack, &self.tcp_client_state);
+
+        debug!("Create HTTP client");
+        let mut client = HttpClient::new_with_tls(&tcp_client, &dns_socket, tls_config);
+
+        debug!("Create HTTP request");
+        let mut buffer = [0_u8; 4096];
+        let mut request = client.request(Method::GET, url).await?;
+
+        debug!("Send HTTP request");
+        let response = request.send(&mut buffer).await?;
+
+        debug!("Response status: {:?}", response.status);
+
+        let buffer = response.body().read_to_end().await?;
+
+        debug!("Read {} bytes", buffer.len());
+
+        let output =
+            Vec::<u8, RESPONSE_SIZE>::from_slice(buffer).map_err(|()| Error::ResponseTooLarge)?;
+
+        Ok(output)
     }
 }
 
 /// An error within an HTTP request
 #[derive(Debug)]
 pub enum Error {
-    /// URL scheme is not supported
-    UnsupportedScheme,
-
     /// Response was too large
     ResponseTooLarge,
 
-    /// Hostname could not be resolved through DNS
-    DnsLookup,
-
     /// Error within TCP streams
-    PortParse(ParseIntError),
-
-    /// Error within TCP streams
-    Tcp(TcpError),
+    Tcp(#[allow(unused)] TcpError),
 
     /// Error within TCP connection
-    TcpConnect(TcpConnectError),
+    TcpConnect(#[allow(unused)] TcpConnectError),
 
     /// Error within DNS system
-    Dns(DnsError),
-
-    /// Error while formatting strings
-    Format(FormatError),
-
-    /// Error while handling TLS
-    Tls(TlsError),
+    Dns(#[allow(unused)] DnsError),
 
     /// Error in HTTP client
-    Reqless(ReqlessError),
+    Reqless(#[allow(unused)] ReqlessError),
 }
 
 impl From<TcpError> for Error {
@@ -273,18 +153,6 @@ impl From<TcpConnectError> for Error {
 impl From<DnsError> for Error {
     fn from(error: DnsError) -> Self {
         Self::Dns(error)
-    }
-}
-
-impl From<FormatError> for Error {
-    fn from(error: FormatError) -> Self {
-        Self::Format(error)
-    }
-}
-
-impl From<TlsError> for Error {
-    fn from(error: TlsError) -> Self {
-        Self::Tls(error)
     }
 }
 
