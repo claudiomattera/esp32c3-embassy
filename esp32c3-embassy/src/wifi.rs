@@ -73,7 +73,7 @@ pub async fn connect(
     let seed = rng_wrapper.next_u64();
     debug!("Use random seed 0x{seed:016x}");
 
-    let timg0 = TimerGroup::new(timg0, clocks, None);
+    let timg0 = TimerGroup::new(timg0, clocks);
     let timer0: ErasedTimer = timg0.timer0.into();
     let timer = PeriodicTimer::new(timer0);
 
