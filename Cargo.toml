@@ -5,7 +5,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Claudio Mattera <dev@claudiomattera.it>"]
 edition = "2021"
 readme = "README.md"
@@ -47,11 +47,11 @@ embedded-hal-bus = { version = "0.1", default-features = false }
 embedded-io-async = { version = "0.6", default-features = false }
 
 # ESP specifics
-esp-hal = { version = "0.18", default-features = false }
-esp-hal-embassy = { version = "0.1", default-features = false }
-esp-backtrace = { version = "0.12", default-features = false }
-esp-println = { version = "0.9", default-features = false }
-esp-wifi = { version = "0.6", default-features = false }
+esp-hal = { version = "0.19", default-features = false }
+esp-hal-embassy = { version = "0.2", default-features = false }
+esp-backtrace = { version = "0.13", default-features = false }
+esp-println = { version = "0.10", default-features = false }
+esp-wifi = { version = "0.7", default-features = false }
 
 # Logging
 log = { version = "0.4", default-features = false }

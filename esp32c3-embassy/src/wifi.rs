@@ -35,10 +35,12 @@ use embassy_time::Timer;
 
 use esp_hal::clock::Clocks;
 use esp_hal::peripherals::RADIO_CLK;
-use esp_hal::peripherals::SYSTIMER;
+use esp_hal::peripherals::TIMG0;
 use esp_hal::peripherals::WIFI;
 use esp_hal::rng::Rng;
-use esp_hal::timer::systimer::SystemTimer;
+use esp_hal::timer::timg::TimerGroup;
+use esp_hal::timer::ErasedTimer;
+use esp_hal::timer::PeriodicTimer;
 
 use heapless::String;
 
@@ -60,7 +62,7 @@ pub static STOP_WIFI_SIGNAL: Signal<CriticalSectionRawMutex, ()> = Signal::new()
 /// Connect to WiFi
 pub async fn connect(
     spawner: &Spawner,
-    systimer: SYSTIMER,
+    timg0: TIMG0,
     rng: Rng,
     wifi: WIFI,
     radio_clock_control: RADIO_CLK,
@@ -71,9 +73,13 @@ pub async fn connect(
     let seed = rng_wrapper.next_u64();
     debug!("Use random seed 0x{seed:016x}");
 
+    let timg0 = TimerGroup::new(timg0, clocks, None);
+    let timer0: ErasedTimer = timg0.timer0.into();
+    let timer = PeriodicTimer::new(timer0);
+
     let init = esp_wifi::initialize(
         EspWifiInitFor::Wifi,
-        SystemTimer::new(systimer).alarm0,
+        timer,
         rng,
         radio_clock_control,
         clocks,

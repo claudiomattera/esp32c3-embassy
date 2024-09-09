@@ -24,7 +24,6 @@ use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 use embassy_sync::channel::Channel;
 
 use esp_hal::clock::ClockControl;
-use esp_hal::delay::Delay as EspDelay;
 use esp_hal::dma::Channel0;
 use esp_hal::dma::Dma;
 use esp_hal::dma::DmaDescriptor;
@@ -49,6 +48,8 @@ use esp_hal::spi::FullDuplexMode;
 use esp_hal::spi::SpiMode;
 use esp_hal::system::SystemControl;
 use esp_hal::timer::timg::TimerGroup;
+use esp_hal::timer::ErasedTimer;
+use esp_hal::timer::OneShotTimer;
 use esp_hal::Async;
 
 use esp_hal_embassy::init as initialize_embassy;
@@ -101,6 +102,9 @@ use self::wifi::Error as WifiError;
 use self::wifi::STOP_WIFI_SIGNAL;
 
 mod worldtimeapi;
+
+/// Timers
+static TIMERS: StaticCell<[OneShotTimer<ErasedTimer>; 1]> = StaticCell::new();
 
 /// Period to wait between readings
 const SAMPLING_PERIOD: Duration = Duration::from_secs(60);
@@ -179,7 +183,11 @@ async fn main_fallible(
     let system = SystemControl::new(peripherals.SYSTEM);
 
     let clocks = ClockControl::max(system.clock_control).freeze();
-    initialize_embassy(&clocks, TimerGroup::new_async(peripherals.TIMG0, &clocks));
+    let timg0 = TimerGroup::new(peripherals.TIMG1, &clocks, None);
+    let timer0 = OneShotTimer::new(timg0.timer0.into());
+    let timers = [timer0];
+    let timers = TIMERS.init(timers);
+    initialize_embassy(&clocks, timers);
 
     let rng = Rng::new(peripherals.RNG);
 
@@ -194,7 +202,7 @@ async fn main_fallible(
         info!("Connect to WiFi");
         let stack = connect_to_wifi(
             spawner,
-            peripherals.SYSTIMER,
+            peripherals.TIMG0,
             rng,
             peripherals.WIFI,
             peripherals.RADIO_CLK,
@@ -241,7 +249,9 @@ async fn main_fallible(
     let dma_channel = dma.channel0;
 
     let spi_dma: SpiDma<'_, SPI2, Channel0, FullDuplexMode, Async> = spi_bus.with_dma(
-        dma_channel.configure_for_async(false, descriptors, rx_descriptors, DmaPriority::Priority0),
+        dma_channel.configure_for_async(false, DmaPriority::Priority0),
+        descriptors,
+        rx_descriptors,
     );
 
     info!("Create PIN for SPI Chip Select");
@@ -278,11 +288,7 @@ async fn main_fallible(
     Timer::after(AWAKE_PERIOD).await;
 
     clock.save_to_rtc_memory(DEEP_SLEEP_DURATION);
-    enter_deep_sleep(
-        peripherals.LPWR,
-        EspDelay::new(&clocks),
-        DEEP_SLEEP_DURATION.into(),
-    );
+    enter_deep_sleep(peripherals.LPWR, DEEP_SLEEP_DURATION.into());
 }
 
 /// An error
