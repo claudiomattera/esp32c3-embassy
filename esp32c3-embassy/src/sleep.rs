@@ -21,7 +21,7 @@ use esp_hal::rtc_cntl::Rtc;
 pub fn enter_deep(rtc_cntl: LPWR, interval: Duration) -> ! {
     let wakeup_source = TimerWakeupSource::new(interval);
 
-    let mut rtc = Rtc::new(rtc_cntl, None);
+    let mut rtc = Rtc::new(rtc_cntl);
 
     info!("Entering deep sleep for {interval:?}");
     rtc.sleep_deep(&[&wakeup_source]);

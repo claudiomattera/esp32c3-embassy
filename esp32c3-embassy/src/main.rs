@@ -24,10 +24,13 @@ use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 use embassy_sync::channel::Channel;
 
 use esp_hal::clock::ClockControl;
-use esp_hal::dma::Channel0;
 use esp_hal::dma::Dma;
+use esp_hal::dma::DmaBufError;
+use esp_hal::dma::DmaChannel0;
 use esp_hal::dma::DmaDescriptor;
 use esp_hal::dma::DmaPriority;
+use esp_hal::dma::DmaRxBuf;
+use esp_hal::dma::DmaTxBuf;
 use esp_hal::gpio::Input;
 use esp_hal::gpio::Io;
 use esp_hal::gpio::Level;
@@ -37,13 +40,11 @@ use esp_hal::i2c::I2C;
 use esp_hal::peripherals::Peripherals;
 use esp_hal::peripherals::SPI2;
 use esp_hal::prelude::_fugit_RateExtU32;
-use esp_hal::prelude::entry;
 use esp_hal::prelude::main;
 use esp_hal::prelude::ram;
 use esp_hal::rng::Rng;
-use esp_hal::spi::master::dma::SpiDma;
-use esp_hal::spi::master::dma::WithDmaSpi2;
 use esp_hal::spi::master::Spi;
+use esp_hal::spi::master::SpiDma;
 use esp_hal::spi::FullDuplexMode;
 use esp_hal::spi::SpiMode;
 use esp_hal::system::SystemControl;
@@ -133,6 +134,15 @@ static DESCRIPTORS: StaticCell<[DmaDescriptor; DESCRIPTORS_SIZE]> = StaticCell::
 /// RX descriptors for SPI DMA
 static RX_DESCRIPTORS: StaticCell<[DmaDescriptor; DESCRIPTORS_SIZE]> = StaticCell::new();
 
+/// Size of SPI DMA buffers
+const BUFFERS_SIZE: usize = 8 * 3;
+
+/// Buffer for SPI DMA
+static BUFFER: StaticCell<[u8; BUFFERS_SIZE]> = StaticCell::new();
+
+/// RX Buffer for SPI DMA
+static RX_BUFFER: StaticCell<[u8; BUFFERS_SIZE]> = StaticCell::new();
+
 /// Stored boot count between deep sleep cycles
 ///
 /// This is a statically allocated variable and it is placed in the RTC Fast
@@ -183,8 +193,8 @@ async fn main_fallible(
     let system = SystemControl::new(peripherals.SYSTEM);
 
     let clocks = ClockControl::max(system.clock_control).freeze();
-    let timg0 = TimerGroup::new(peripherals.TIMG1, &clocks, None);
-    let timer0 = OneShotTimer::new(timg0.timer0.into());
+    let timg0 = TimerGroup::new(peripherals.TIMG1, &clocks);
+    let timer0 = OneShotTimer::new(ErasedTimer::from(timg0.timer0));
     let timers = [timer0];
     let timers = TIMERS.init(timers);
     initialize_embassy(&clocks, timers);
@@ -245,14 +255,20 @@ async fn main_fallible(
     let rx_descriptors: &'static mut _ =
         RX_DESCRIPTORS.init([DmaDescriptor::EMPTY; DESCRIPTORS_SIZE]);
 
-    let dma = Dma::new(peripherals.DMA);
-    let dma_channel = dma.channel0;
+    let buffer: &'static mut _ = BUFFER.init([0; BUFFERS_SIZE]);
+    let rx_buffer: &'static mut _ = RX_BUFFER.init([0; BUFFERS_SIZE]);
 
-    let spi_dma: SpiDma<'_, SPI2, Channel0, FullDuplexMode, Async> = spi_bus.with_dma(
-        dma_channel.configure_for_async(false, DmaPriority::Priority0),
-        descriptors,
-        rx_descriptors,
-    );
+    let dma = Dma::new(peripherals.DMA);
+    let dma_channel = dma
+        .channel0
+        .configure_for_async(false, DmaPriority::Priority0);
+
+    let spi_dma: SpiDma<'_, SPI2, DmaChannel0, FullDuplexMode, Async> =
+        spi_bus.with_dma(dma_channel);
+
+    let tx_buffers = DmaTxBuf::new(descriptors, buffer)?;
+    let rx_buffers = DmaRxBuf::new(rx_descriptors, rx_buffer)?;
+    let spi_dma_bus = spi_dma.with_buffers(tx_buffers, rx_buffers);
 
     info!("Create PIN for SPI Chip Select");
     let cs = io.pins.gpio8;
@@ -263,7 +279,7 @@ async fn main_fallible(
     let dc = Output::new(io.pins.gpio19, Level::Low);
 
     info!("Create SPI device");
-    let spi_device = ExclusiveDevice::new(spi_dma, Output::new(cs, Level::Low), Delay);
+    let spi_device = ExclusiveDevice::new(spi_dma_bus, Output::new(cs, Level::Low), Delay);
 
     info!("Create channel");
     let channel: &'static mut _ = CHANNEL.init(Channel::new());
@@ -307,6 +323,10 @@ enum Error {
     /// An error within clock operations
     #[allow(unused)]
     Clock(ClockError),
+
+    /// An error within creation of DMA buffers
+    #[allow(unused)]
+    DmaBuffer(DmaBufError),
 }
 
 impl From<Infallible> for Error {
@@ -324,5 +344,11 @@ impl From<WifiError> for Error {
 impl From<ClockError> for Error {
     fn from(error: ClockError) -> Self {
         Self::Clock(error)
+    }
+}
+
+impl From<DmaBufError> for Error {
+    fn from(error: DmaBufError) -> Self {
+        Self::DmaBuffer(error)
     }
 }

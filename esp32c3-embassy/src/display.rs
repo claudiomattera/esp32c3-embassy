@@ -24,7 +24,7 @@ use embedded_hal::digital::OutputPin;
 
 use time::OffsetDateTime;
 
-use esp_hal::dma::Channel0;
+use esp_hal::dma::DmaChannel0;
 use esp_hal::gpio::Gpio10;
 use esp_hal::gpio::Gpio19;
 use esp_hal::gpio::Gpio8;
@@ -32,7 +32,7 @@ use esp_hal::gpio::Gpio9;
 use esp_hal::gpio::Input;
 use esp_hal::gpio::Output;
 use esp_hal::peripherals::SPI2;
-use esp_hal::spi::master::dma::SpiDma;
+use esp_hal::spi::master::SpiDmaBus;
 use esp_hal::spi::FullDuplexMode;
 use esp_hal::Async;
 
@@ -55,7 +55,7 @@ use crate::domain::Sample;
 #[embassy_executor::task]
 pub async fn update_task(
     spi_device: ExclusiveDevice<
-        SpiDma<'static, SPI2, Channel0, FullDuplexMode, Async>,
+        SpiDmaBus<'static, SPI2, DmaChannel0, FullDuplexMode, Async>,
         Output<'static, Gpio8>,
         Delay,
     >,
