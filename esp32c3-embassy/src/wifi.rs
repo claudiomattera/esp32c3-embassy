@@ -187,10 +187,10 @@ async fn connection_fallible(
 #[derive(Debug)]
 pub enum Error {
     /// Error during WiFi initialization
-    WifiInitialization(#[allow(unused)] WifiInitializationError),
+    WifiInitialization(#[expect(unused, reason = "Never read directly")] WifiInitializationError),
 
     /// Error during WiFi operation
-    Wifi(#[allow(unused)] EspWifiError),
+    Wifi(#[expect(unused, reason = "Never read directly")] EspWifiError),
 }
 
 impl From<WifiInitializationError> for Error {

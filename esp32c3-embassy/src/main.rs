@@ -194,8 +194,7 @@ async fn main_fallible(
 
     let clocks = ClockControl::max(system.clock_control).freeze();
     let timg0 = TimerGroup::new(peripherals.TIMG1, &clocks);
-    let timer0 = OneShotTimer::new(ErasedTimer::from(timg0.timer0));
-    let timers = [timer0];
+    let timers = [OneShotTimer::new(ErasedTimer::from(timg0.timer0))];
     let timers = TIMERS.init(timers);
     initialize_embassy(&clocks, timers);
 
@@ -317,15 +316,15 @@ enum Error {
     ParseCredentials,
 
     /// An error within WiFi operations
-    #[allow(unused)]
+    #[expect(unused, reason = "Never read directly")]
     Wifi(WifiError),
 
     /// An error within clock operations
-    #[allow(unused)]
+    #[expect(unused, reason = "Never read directly")]
     Clock(ClockError),
 
     /// An error within creation of DMA buffers
-    #[allow(unused)]
+    #[expect(unused, reason = "Never read directly")]
     DmaBuffer(DmaBufError),
 }
 

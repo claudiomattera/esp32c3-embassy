@@ -53,7 +53,7 @@ pub trait WorldTimeApiClient: HttpClientTrait {
         if let (Some(timestamp), Some(offset)) = (timestamp, offset) {
             let offset = UtcOffset::from_whole_seconds(offset)?;
 
-            #[allow(clippy::cast_possible_wrap)]
+            #[allow(clippy::cast_possible_wrap, reason = "Timestamp will fit an i64")]
             let timestamp = timestamp as i64;
 
             let utc = OffsetDateTime::from_unix_timestamp(timestamp)?;
@@ -79,16 +79,16 @@ pub enum Error {
     Unknown,
 
     /// A time component is out of range
-    TimeComponentRange(#[allow(unused)] TimeComponentRangeError),
+    TimeComponentRange(#[expect(unused, reason = "Never read directly")] TimeComponentRangeError),
 
     /// Error from HTTP client
-    Http(#[allow(unused)] HttpError),
+    Http(#[expect(unused, reason = "Never read directly")] HttpError),
 
     /// An integer valued returned by the server could not be parsed
-    ParseInt(#[allow(unused)] ParseIntError),
+    ParseInt(#[expect(unused, reason = "Never read directly")] ParseIntError),
 
     /// Text returned by the server is not valid UTF-8
-    Utf8(#[allow(unused)] Utf8Error),
+    Utf8(#[expect(unused, reason = "Never read directly")] Utf8Error),
 }
 
 impl From<TimeComponentRangeError> for Error {
