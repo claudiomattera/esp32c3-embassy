@@ -19,7 +19,6 @@ use log::Metadata;
 use log::Record;
 
 use esp_println::println;
-use esp_println::Printer;
 
 /// Setup logging
 ///
@@ -103,7 +102,5 @@ impl Log for EspPrintlnLogger {
         }
     }
 
-    fn flush(&self) {
-        Printer.flush();
-    }
+    fn flush(&self) {}
 }
