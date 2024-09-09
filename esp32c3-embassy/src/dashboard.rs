@@ -102,7 +102,10 @@ fn lay_out_measurement<'text>(
 }
 
 /// Lay out the update time row
-#[allow(clippy::needless_lifetimes)]
+#[allow(
+    clippy::needless_lifetimes,
+    reason = "Lifetime annotation is actually needed"
+)]
 fn lay_out_update_time<'text>(now: &'text str) -> impl Drawable<Color = TriColor> + View + 'text {
     LinearLayout::horizontal(
         Chain::new(Text::new("Updated at ", Point::zero(), BLACK_STYLE)).append(Text::new(
@@ -151,7 +154,7 @@ pub enum Error {
     Impossible(Infallible),
 
     /// An error occurred while formatting a string
-    Fmt(#[allow(unused)] FmtError),
+    Fmt(FmtError),
 }
 
 impl From<FmtError> for Error {

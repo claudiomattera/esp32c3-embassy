@@ -126,16 +126,16 @@ pub enum Error {
     ResponseTooLarge,
 
     /// Error within TCP streams
-    Tcp(#[allow(unused)] TcpError),
+    Tcp(TcpError),
 
     /// Error within TCP connection
-    TcpConnect(#[allow(unused)] TcpConnectError),
+    TcpConnect(#[expect(unused, reason = "Never read directly")] TcpConnectError),
 
     /// Error within DNS system
-    Dns(#[allow(unused)] DnsError),
+    Dns(#[expect(unused, reason = "Never read directly")] DnsError),
 
     /// Error in HTTP client
-    Reqless(#[allow(unused)] ReqlessError),
+    Reqless(#[expect(unused, reason = "Never read directly")] ReqlessError),
 }
 
 impl From<TcpError> for Error {

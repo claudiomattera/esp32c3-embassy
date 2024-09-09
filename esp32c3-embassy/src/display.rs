@@ -100,7 +100,10 @@ where
     DC: OutputPin,
     DELAY: DelayNs,
 {
-    #[allow(clippy::pattern_type_mismatch)]
+    #[expect(
+        clippy::pattern_type_mismatch,
+        reason = "Allow to avoid complicate match expression"
+    )]
     if let Some((_, sample)) = history.recent() {
         log_sample(sample);
 
@@ -132,10 +135,10 @@ fn log_sample(sample: &Sample) {
 #[derive(Debug)]
 enum ReportError {
     /// An error occurred while updating the display
-    Display(#[allow(unused)] DisplayError),
+    Display(#[expect(unused, reason = "Never read directly")] DisplayError),
 
     /// An error occurred while drawing the dashboard
-    Dashboard(#[allow(unused)] DashboardError),
+    Dashboard(DashboardError),
 }
 
 impl From<DisplayError> for ReportError {

@@ -31,7 +31,7 @@ pub struct Sample {
 
 impl Sample {
     /// Construct a random sample
-    #[allow(clippy::cast_precision_loss)]
+    #[expect(clippy::cast_precision_loss, reason = "Acceptable precision loss")]
     pub fn random(rng: &mut Rng) -> Self {
         let temperature_seed = rng.random() as f32 / u32::MAX as f32;
         let humidity_seed = rng.random() as f32 / u32::MAX as f32;

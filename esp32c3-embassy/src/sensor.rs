@@ -124,13 +124,13 @@ async fn initialize(
 #[derive(Debug)]
 enum SensorError {
     /// Error from clock
-    Clock(#[allow(unused)] ClockError),
+    Clock(#[expect(unused, reason = "Never read directly")] ClockError),
 
     /// Error from domain
-    Domain(#[allow(unused)] DomainError),
+    Domain(DomainError),
 
     /// Error from I²C bus
-    I2c(#[allow(unused)] I2cError),
+    I2c(#[expect(unused, reason = "Never read directly")] I2cError),
 }
 
 impl From<ClockError> for SensorError {
