@@ -91,6 +91,34 @@ For SPI (display:)
 ![Connections](./sketch/sketch.png)
 
 
+Usage with Nix
+----
+
+To get a development shell with the correct rust tooling, run:
+
+~~~~shell
+nix develop
+~~~~
+
+To simplify your nix workflow, you can use `direnv`
+
+~~~~shell
+echo "use flake" > .envrc
+direnv allow
+~~~~
+
+Then either build as you would normally, with `just` and `cargo`:
+
+~~~~shell
+just build
+~~~~
+
+Alternatively you can build with nix:
+
+~~~~shell
+nix build
+~~~~
+
 Changes
 ----
 
