@@ -1,5 +1,5 @@
 {
-  inputs = {
+ inputs = {
     nixpkgs.url = "nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     naersk = {
@@ -21,17 +21,22 @@
 
         toolchain = with fenix.packages.${system}; fromToolchainFile {
           file = ./rust-toolchain.toml; # alternatively, dir = ./.;
-          sha256 = "sha256-OW04Qqw7XvVUiTzJSvf/DjTqDnLjOIOtQo6yubJWrOU=";
+          sha256 = "sha256-yMuSb5eQPO/bHv+Bcf/US8LVMbf/G/0MSfiPwBhiPpk=";
         };
 
+        target = "riscv32imc-unknown-none-elf";
+
       in {
-        defaultPackage = (naersk.lib.${system}.override {
-          # For `nix build` & `nix run`:
-          cargo = toolchain;
-          rustc = toolchain;
-        }).buildPackage {
-          src = ./.;
-        };
+        packages.default =
+          (naersk.lib.${system}.override {
+            cargo = toolchain;
+            rustc = toolchain;
+          }).buildPackage {
+            src = ./.;
+            CARGO_BUILD_TARGET = target;
+            WIFI_SSID = "xxx";
+            WIFI_PASSWORD = "xxx";
+          };
 
         # For `nix develop` or `direnv allow`:
         devShell = pkgs.mkShell {

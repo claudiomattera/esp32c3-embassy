@@ -1,2 +1,5 @@
 /target
 .envrc
+
+# nix build directory
+/result
