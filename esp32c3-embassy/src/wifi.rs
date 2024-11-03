@@ -15,6 +15,7 @@ use embassy_executor::Spawner;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::signal::Signal;
 
+use esp_wifi::init as initialize_wifi;
 use esp_wifi::wifi::ClientConfiguration;
 use esp_wifi::wifi::Configuration;
 use esp_wifi::wifi::WifiController;
@@ -33,14 +34,12 @@ use embassy_net::StackResources;
 use embassy_time::Duration;
 use embassy_time::Timer;
 
-use esp_hal::clock::Clocks;
 use esp_hal::peripherals::RADIO_CLK;
 use esp_hal::peripherals::TIMG0;
 use esp_hal::peripherals::WIFI;
 use esp_hal::rng::Rng;
 use esp_hal::timer::timg::TimerGroup;
-use esp_hal::timer::ErasedTimer;
-use esp_hal::timer::PeriodicTimer;
+use esp_hal::Blocking;
 
 use heapless::String;
 
@@ -62,28 +61,17 @@ pub static STOP_WIFI_SIGNAL: Signal<CriticalSectionRawMutex, ()> = Signal::new()
 /// Connect to WiFi
 pub async fn connect(
     spawner: &Spawner,
-    timg0: TIMG0,
+    timg0: TimerGroup<'static, TIMG0, Blocking>,
     rng: Rng,
     wifi: WIFI,
     radio_clock_control: RADIO_CLK,
-    clocks: &Clocks<'_>,
     (ssid, password): (String<32>, String<64>),
 ) -> Result<&'static Stack<WifiDevice<'static, WifiStaDevice>>, Error> {
     let mut rng_wrapper = RngWrapper::from(rng);
     let seed = rng_wrapper.next_u64();
     debug!("Use random seed 0x{seed:016x}");
 
-    let timg0 = TimerGroup::new(timg0, clocks);
-    let timer0: ErasedTimer = timg0.timer0.into();
-    let timer = PeriodicTimer::new(timer0);
-
-    let init = esp_wifi::initialize(
-        EspWifiInitFor::Wifi,
-        timer,
-        rng,
-        radio_clock_control,
-        clocks,
-    )?;
+    let init = initialize_wifi(EspWifiInitFor::Wifi, timg0.timer0, rng, radio_clock_control)?;
 
     let (wifi_interface, controller) = esp_wifi::wifi::new_with_mode(&init, wifi, WifiStaDevice)?;
 

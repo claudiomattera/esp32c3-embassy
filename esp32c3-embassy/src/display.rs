@@ -24,11 +24,7 @@ use embedded_hal::digital::OutputPin;
 
 use time::OffsetDateTime;
 
-use esp_hal::dma::DmaChannel0;
-use esp_hal::gpio::Gpio10;
-use esp_hal::gpio::Gpio19;
-use esp_hal::gpio::Gpio8;
-use esp_hal::gpio::Gpio9;
+use esp_hal::gpio::AnyPin;
 use esp_hal::gpio::Input;
 use esp_hal::gpio::Output;
 use esp_hal::peripherals::SPI2;
@@ -55,13 +51,13 @@ use crate::domain::Sample;
 #[embassy_executor::task]
 pub async fn update_task(
     spi_device: ExclusiveDevice<
-        SpiDmaBus<'static, SPI2, DmaChannel0, FullDuplexMode, Async>,
-        Output<'static, Gpio8>,
+        SpiDmaBus<'static, SPI2, FullDuplexMode, Async>,
+        Output<'static, AnyPin>,
         Delay,
     >,
-    busy: Input<'static, Gpio9>,
-    rst: Output<'static, Gpio10>,
-    dc: Output<'static, Gpio19>,
+    busy: Input<'static, AnyPin>,
+    rst: Output<'static, AnyPin>,
+    dc: Output<'static, AnyPin>,
     receiver: Receiver<'static, NoopRawMutex, Reading, 3>,
     history: &'static mut HistoryBuffer<(OffsetDateTime, Sample), 96>,
 ) {

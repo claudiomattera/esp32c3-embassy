@@ -30,7 +30,7 @@ use esp_println::println;
 /// <https://github.com/rust-lang/cargo/issues/10358>
 pub fn setup() {
     /// Log level
-    const LEVEL: Option<&'static str> = option_env!("ESP_LOGLEVEL");
+    const LEVEL: Option<&'static str> = option_env!("ESP_LOG");
 
     // SAFETY:
     //

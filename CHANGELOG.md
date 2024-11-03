@@ -10,11 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Update `embassy-executor` to version 0.6
-- Update `esp-hal` to version 0.20
-- Update `esp-hal-embassy` to version 0.3
+- Update `esp-hal` to version 0.21
+- Update `esp-hal-embassy` to version 0.4
 - Update `esp-backtrace` to version 0.14
-- Update `esp-println` to version 0.11
-- Update `esp-wifi` to version 0.9
+- Update `esp-println` to version 0.12
+- Update `esp-wifi` to version 0.10
+- Add feature `esp-alloc` to `esp-wifi`
+- Add `esp-alloc` to version 0.5
+- Update `bme208-rs` to version 0.3
+- Update `uom` to version 0.36
 
 
 ## [0.3.0] - 2024-09-09

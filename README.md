@@ -18,8 +18,8 @@ The firmware runs on a [ESP32-C3] microcontroller, samples environment data (tem
 In particular:
 
 * It uses [Embassy][embassy] as a general framework, and makes everything async, including communicating with sensor and display over I²C and SPI with [`embedded-hal-async`][embedded-hal-async].
-* It is implemented on bare metal with `no_std` and without `alloc`.
-* It is up-to-date with the latest crate versions (as of 2024-09-09).
+* It is implemented on bare metal with `no_std`, but with `alloc` (it is required for WiFi).
+* It is up-to-date with the latest crate versions (as of 2024-11-03).
 * It uses [`reqwless`][reqwless] for HTTP requests and TLS.
 
 It is mostly meant as a reference / example / starting point.
