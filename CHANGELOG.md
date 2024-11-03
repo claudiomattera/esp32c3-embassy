@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Nix flake (contributed by [MaxKiv](https://github.com/MaxKiv/))
+
 ### Changed
 
 - Update `embassy-executor` to version 0.6
