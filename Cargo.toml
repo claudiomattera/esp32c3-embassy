@@ -87,11 +87,14 @@ missing_docs = "allow"
 
 [workspace.lints.clippy]
 # Cargo
-multiple_crate_versions = "warn"
 cargo_common_metadata = "deny"
 negative_feature_names = "deny"
 redundant_feature_names = "deny"
 wildcard_dependencies = "deny"
+# There is no way to avoid multiple crate versions in dependencies.
+# At least embedded-hal is included twice, once as version 1, and once as
+# version 0.2.
+multiple_crate_versions = "allow"
 
 # Predefined
 correctness = { level = "deny", priority = -1 }
