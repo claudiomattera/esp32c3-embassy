@@ -5,7 +5,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Claudio Mattera <dev@claudiomattera.it>"]
 edition = "2021"
 readme = "README.md"
@@ -35,7 +35,7 @@ exclude = [
 
 [workspace.dependencies]
 # Embassy
-embassy-executor = { version = "0.5", default-features = false }
+embassy-executor = { version = "0.6", default-features = false }
 embassy-sync = { version = "0.6", default-features = false }
 embassy-time = { version = "0.3", default-features = false }
 embassy-net = { version = "0.4", default-features = false }
@@ -47,18 +47,19 @@ embedded-hal-bus = { version = "0.1", default-features = false }
 embedded-io-async = { version = "0.6", default-features = false }
 
 # ESP specifics
-esp-hal = { version = "0.19", default-features = false }
-esp-hal-embassy = { version = "0.2", default-features = false }
-esp-backtrace = { version = "0.13", default-features = false }
-esp-println = { version = "0.10", default-features = false }
-esp-wifi = { version = "0.7", default-features = false }
+esp-hal = { version = "0.21", default-features = false }
+esp-hal-embassy = { version = "0.4", default-features = false }
+esp-backtrace = { version = "0.14", default-features = false }
+esp-println = { version = "0.12", default-features = false }
+esp-wifi = { version = "0.10", default-features = false }
+esp-alloc = { version = "0.5", default-features = false }
 
 # Logging
 log = { version = "0.4", default-features = false }
 
 # Sensor
-bme280-rs = { version = "0.2", default-features = false }
-uom = { version = "0.33", default-features = false }
+bme280-rs = { version = "0.3", default-features = false }
+uom = { version = "0.36", default-features = false }
 
 # Display
 waveshare-154bv2-rs = { path = "./waveshare-154bv2-rs", default-features = false }
@@ -86,11 +87,14 @@ missing_docs = "allow"
 
 [workspace.lints.clippy]
 # Cargo
-multiple_crate_versions = "warn"
 cargo_common_metadata = "deny"
 negative_feature_names = "deny"
 redundant_feature_names = "deny"
 wildcard_dependencies = "deny"
+# There is no way to avoid multiple crate versions in dependencies.
+# At least embedded-hal is included twice, once as version 1, and once as
+# version 0.2.
+multiple_crate_versions = "allow"
 
 # Predefined
 correctness = { level = "deny", priority = -1 }

@@ -30,11 +30,12 @@ embedded-hal-bus = { workspace = true, features = ["async"] }
 embedded-io-async = { workspace = true }
 
 # ESP specifics
-esp-hal = { workspace = true, features = ["esp32c3", "async"] }
-esp-hal-embassy = { workspace = true, features = ["executors"] }
+esp-hal = { workspace = true, features = ["esp32c3"] }
+esp-hal-embassy = { workspace = true, features = ["esp32c3", "executors"] }
 esp-backtrace = { workspace = true, features = ["esp32c3", "panic-handler", "exception-handler", "println"] }
 esp-println = { workspace = true, features = ["esp32c3", "log", "uart", "colors"] }
-esp-wifi = { workspace = true, features = ["esp32c3", "wifi", "async", "tcp", "ipv4", "dhcpv4", "embassy-net"] }
+esp-wifi = { workspace = true, features = ["esp32c3", "wifi", "async", "tcp", "ipv4", "dhcpv4", "embassy-net", "esp-alloc"] }
+esp-alloc = { workspace = true }
 
 # Logging
 log = { workspace = true }

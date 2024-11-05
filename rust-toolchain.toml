@@ -1,4 +1,5 @@
 [toolchain]
+channel = "stable"
 components = ["rustfmt", "clippy"]
 targets = ["riscv32imc-unknown-none-elf"]
 profile = "minimal"

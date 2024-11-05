@@ -24,15 +24,11 @@ use embedded_hal::digital::OutputPin;
 
 use time::OffsetDateTime;
 
-use esp_hal::dma::Channel0;
-use esp_hal::gpio::Gpio10;
-use esp_hal::gpio::Gpio19;
-use esp_hal::gpio::Gpio8;
-use esp_hal::gpio::Gpio9;
+use esp_hal::gpio::AnyPin;
 use esp_hal::gpio::Input;
 use esp_hal::gpio::Output;
 use esp_hal::peripherals::SPI2;
-use esp_hal::spi::master::dma::SpiDma;
+use esp_hal::spi::master::SpiDmaBus;
 use esp_hal::spi::FullDuplexMode;
 use esp_hal::Async;
 
@@ -55,13 +51,13 @@ use crate::domain::Sample;
 #[embassy_executor::task]
 pub async fn update_task(
     spi_device: ExclusiveDevice<
-        SpiDma<'static, SPI2, Channel0, FullDuplexMode, Async>,
-        Output<'static, Gpio8>,
+        SpiDmaBus<'static, SPI2, FullDuplexMode, Async>,
+        Output<'static, AnyPin>,
         Delay,
     >,
-    busy: Input<'static, Gpio9>,
-    rst: Output<'static, Gpio10>,
-    dc: Output<'static, Gpio19>,
+    busy: Input<'static, AnyPin>,
+    rst: Output<'static, AnyPin>,
+    dc: Output<'static, AnyPin>,
     receiver: Receiver<'static, NoopRawMutex, Reading, 3>,
     history: &'static mut HistoryBuffer<(OffsetDateTime, Sample), 96>,
 ) {
@@ -100,7 +96,10 @@ where
     DC: OutputPin,
     DELAY: DelayNs,
 {
-    #[allow(clippy::pattern_type_mismatch)]
+    #[expect(
+        clippy::pattern_type_mismatch,
+        reason = "Allow to avoid complicate match expression"
+    )]
     if let Some((_, sample)) = history.recent() {
         log_sample(sample);
 
@@ -132,10 +131,10 @@ fn log_sample(sample: &Sample) {
 #[derive(Debug)]
 enum ReportError {
     /// An error occurred while updating the display
-    Display(#[allow(unused)] DisplayError),
+    Display(#[expect(unused, reason = "Never read directly")] DisplayError),
 
     /// An error occurred while drawing the dashboard
-    Dashboard(#[allow(unused)] DashboardError),
+    Dashboard(DashboardError),
 }
 
 impl From<DisplayError> for ReportError {

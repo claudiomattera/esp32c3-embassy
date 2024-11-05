@@ -48,7 +48,7 @@ impl Clock {
     /// Return the current time
     pub fn now(&self) -> Result<OffsetDateTime, Error> {
         let epoch = self.now_as_epoch();
-        #[allow(clippy::cast_possible_wrap)]
+        #[expect(clippy::cast_possible_wrap, reason = "Timestamp will fit an i64")]
         let utc = OffsetDateTime::from_unix_timestamp(epoch as i64)?;
         let local = utc
             .checked_to_offset(self.offset)
@@ -65,7 +65,10 @@ impl Clock {
 
         let current_time = now.unix_timestamp();
 
-        #[allow(clippy::cast_sign_loss)]
+        #[expect(
+            clippy::cast_sign_loss,
+            reason = "Current timestamp will never be negative"
+        )]
         let current_time = current_time as u64;
 
         let offset = now.offset();
@@ -136,13 +139,13 @@ fn duration_to_next_rounded_wakeup(now: Duration, period: Duration) -> Duration 
 #[derive(Debug)]
 pub enum Error {
     /// A time component is out of range
-    TimeComponentRange(#[allow(unused)] TimeComponentRange),
+    TimeComponentRange(#[expect(unused, reason = "Never read directly")] TimeComponentRange),
 
     /// The time is invalid in the current time offset
     InvalidInOffset,
 
     /// Error synchronizing time from World Time API
-    Synchronization(#[allow(unused)] WorldTimeApiError),
+    Synchronization(#[expect(unused, reason = "Never read directly")] WorldTimeApiError),
 }
 
 impl From<TimeComponentRange> for Error {

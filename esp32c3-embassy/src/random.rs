@@ -48,7 +48,11 @@ impl RngCore for RngWrapper {
 impl CryptoRng for RngWrapper {}
 
 /// Join a pair of `u32` into a `u64`
-#[allow(clippy::many_single_char_names, clippy::min_ident_chars)]
+#[allow(
+    clippy::many_single_char_names,
+    clippy::min_ident_chars,
+    reason = "This is still readable"
+)]
 fn u32_pair_to_u64(first: u32, second: u32) -> u64 {
     let [a, b, c, d] = first.to_be_bytes();
     let [e, f, g, h] = second.to_be_bytes();

@@ -16,4 +16,4 @@ rustflags = [
 ]
 
 [env]
-ESP_LOGLEVEL = "INFO"
+ESP_LOG = "info"

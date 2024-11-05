@@ -23,34 +23,34 @@ use embassy_time::Timer;
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 use embassy_sync::channel::Channel;
 
-use esp_hal::clock::ClockControl;
-use esp_hal::dma::Channel0;
+use esp_alloc::heap_allocator;
+
+use esp_hal::clock::CpuClock;
 use esp_hal::dma::Dma;
+use esp_hal::dma::DmaBufError;
 use esp_hal::dma::DmaDescriptor;
 use esp_hal::dma::DmaPriority;
+use esp_hal::dma::DmaRxBuf;
+use esp_hal::dma::DmaTxBuf;
 use esp_hal::gpio::Input;
 use esp_hal::gpio::Io;
 use esp_hal::gpio::Level;
 use esp_hal::gpio::Output;
 use esp_hal::gpio::Pull;
-use esp_hal::i2c::I2C;
-use esp_hal::peripherals::Peripherals;
+use esp_hal::i2c::I2c;
+use esp_hal::init as initialize_esp_hal;
 use esp_hal::peripherals::SPI2;
-use esp_hal::prelude::_fugit_RateExtU32;
-use esp_hal::prelude::entry;
-use esp_hal::prelude::main;
-use esp_hal::prelude::ram;
+use esp_hal::prelude::*; // RateExtU32, main, ram
 use esp_hal::rng::Rng;
-use esp_hal::spi::master::dma::SpiDma;
-use esp_hal::spi::master::dma::WithDmaSpi2;
 use esp_hal::spi::master::Spi;
+use esp_hal::spi::master::SpiDma;
 use esp_hal::spi::FullDuplexMode;
 use esp_hal::spi::SpiMode;
-use esp_hal::system::SystemControl;
+use esp_hal::timer::systimer::SystemTimer;
+use esp_hal::timer::systimer::Target;
 use esp_hal::timer::timg::TimerGroup;
-use esp_hal::timer::ErasedTimer;
-use esp_hal::timer::OneShotTimer;
 use esp_hal::Async;
+use esp_hal::Config as EspConfig;
 
 use esp_hal_embassy::init as initialize_embassy;
 
@@ -103,9 +103,6 @@ use self::wifi::STOP_WIFI_SIGNAL;
 
 mod worldtimeapi;
 
-/// Timers
-static TIMERS: StaticCell<[OneShotTimer<ErasedTimer>; 1]> = StaticCell::new();
-
 /// Period to wait between readings
 const SAMPLING_PERIOD: Duration = Duration::from_secs(60);
 
@@ -121,6 +118,9 @@ const WIFI_SSID: &str = env!("WIFI_SSID");
 /// Password for WiFi network
 const WIFI_PASSWORD: &str = env!("WIFI_PASSWORD");
 
+/// Size of heap for dynamically-allocated memory
+const HEAP_MEMORY_SIZE: usize = 72 * 1024;
+
 /// A channel between sensor sampler and display updater
 static CHANNEL: StaticCell<Channel<NoopRawMutex, Reading, 3>> = StaticCell::new();
 
@@ -132,6 +132,15 @@ static DESCRIPTORS: StaticCell<[DmaDescriptor; DESCRIPTORS_SIZE]> = StaticCell::
 
 /// RX descriptors for SPI DMA
 static RX_DESCRIPTORS: StaticCell<[DmaDescriptor; DESCRIPTORS_SIZE]> = StaticCell::new();
+
+/// Size of SPI DMA buffers
+const BUFFERS_SIZE: usize = 8 * 3;
+
+/// Buffer for SPI DMA
+static BUFFER: StaticCell<[u8; BUFFERS_SIZE]> = StaticCell::new();
+
+/// RX Buffer for SPI DMA
+static RX_BUFFER: StaticCell<[u8; BUFFERS_SIZE]> = StaticCell::new();
 
 /// Stored boot count between deep sleep cycles
 ///
@@ -179,15 +188,16 @@ async fn main_fallible(
     spawner: &Spawner,
     history: &'static mut HistoryBuffer<(OffsetDateTime, Sample), 96>,
 ) -> Result<(), Error> {
-    let peripherals = Peripherals::take();
-    let system = SystemControl::new(peripherals.SYSTEM);
+    let peripherals = initialize_esp_hal({
+        let mut config = EspConfig::default();
+        config.cpu_clock = CpuClock::max();
+        config
+    });
 
-    let clocks = ClockControl::max(system.clock_control).freeze();
-    let timg0 = TimerGroup::new(peripherals.TIMG1, &clocks, None);
-    let timer0 = OneShotTimer::new(timg0.timer0.into());
-    let timers = [timer0];
-    let timers = TIMERS.init(timers);
-    initialize_embassy(&clocks, timers);
+    heap_allocator!(HEAP_MEMORY_SIZE);
+
+    let systimer = SystemTimer::new(peripherals.SYSTIMER).split::<Target>();
+    initialize_embassy(systimer.alarm0);
 
     let rng = Rng::new(peripherals.RNG);
 
@@ -200,13 +210,13 @@ async fn main_fallible(
             String::<64>::try_from(WIFI_PASSWORD).map_err(|()| Error::ParseCredentials)?;
 
         info!("Connect to WiFi");
+        let timg0 = TimerGroup::new(peripherals.TIMG0);
         let stack = connect_to_wifi(
             spawner,
-            peripherals.TIMG0,
+            timg0,
             rng,
             peripherals.WIFI,
             peripherals.RADIO_CLK,
-            &clocks,
             (ssid, password),
         )
         .await?;
@@ -226,17 +236,17 @@ async fn main_fallible(
     let io = Io::new(peripherals.GPIO, peripherals.IO_MUX);
 
     info!("Turn off cold LED");
-    let mut cold_led = io.pins.gpio18;
+    let mut cold_led = Output::new(io.pins.gpio18, Level::High);
     cold_led.set_low();
 
     info!("Create I²C bus");
     let sda = io.pins.gpio1;
     let scl = io.pins.gpio2;
 
-    let i2c = I2C::new_async(peripherals.I2C0, sda, scl, 25_u32.kHz(), &clocks);
+    let i2c = I2c::new_async(peripherals.I2C0, sda, scl, 25_u32.kHz());
 
     info!("Create SPI bus");
-    let spi_bus = Spi::new(peripherals.SPI2, 25_u32.kHz(), SpiMode::Mode0, &clocks)
+    let spi_bus = Spi::new(peripherals.SPI2, 25_u32.kHz(), SpiMode::Mode0)
         .with_sck(io.pins.gpio6)
         .with_mosi(io.pins.gpio7);
 
@@ -245,17 +255,22 @@ async fn main_fallible(
     let rx_descriptors: &'static mut _ =
         RX_DESCRIPTORS.init([DmaDescriptor::EMPTY; DESCRIPTORS_SIZE]);
 
-    let dma = Dma::new(peripherals.DMA);
-    let dma_channel = dma.channel0;
+    let buffer: &'static mut _ = BUFFER.init([0; BUFFERS_SIZE]);
+    let rx_buffer: &'static mut _ = RX_BUFFER.init([0; BUFFERS_SIZE]);
 
-    let spi_dma: SpiDma<'_, SPI2, Channel0, FullDuplexMode, Async> = spi_bus.with_dma(
-        dma_channel.configure_for_async(false, DmaPriority::Priority0),
-        descriptors,
-        rx_descriptors,
-    );
+    let dma = Dma::new(peripherals.DMA);
+    let dma_channel = dma
+        .channel0
+        .configure_for_async(false, DmaPriority::Priority0);
+
+    let spi_dma: SpiDma<'_, SPI2, FullDuplexMode, Async> = spi_bus.with_dma(dma_channel);
+
+    let tx_buffers = DmaTxBuf::new(descriptors, buffer)?;
+    let rx_buffers = DmaRxBuf::new(rx_descriptors, rx_buffer)?;
+    let spi_dma_bus = spi_dma.with_buffers(rx_buffers, tx_buffers);
 
     info!("Create PIN for SPI Chip Select");
-    let cs = io.pins.gpio8;
+    let cs = Output::new(io.pins.gpio8, Level::High);
 
     info!("Create additional PINs");
     let busy = Input::new(io.pins.gpio9, Pull::Up);
@@ -263,7 +278,7 @@ async fn main_fallible(
     let dc = Output::new(io.pins.gpio19, Level::Low);
 
     info!("Create SPI device");
-    let spi_device = ExclusiveDevice::new(spi_dma, Output::new(cs, Level::Low), Delay);
+    let spi_device = ExclusiveDevice::new(spi_dma_bus, cs, Delay);
 
     info!("Create channel");
     let channel: &'static mut _ = CHANNEL.init(Channel::new());
@@ -301,12 +316,16 @@ enum Error {
     ParseCredentials,
 
     /// An error within WiFi operations
-    #[allow(unused)]
+    #[expect(unused, reason = "Never read directly")]
     Wifi(WifiError),
 
     /// An error within clock operations
-    #[allow(unused)]
+    #[expect(unused, reason = "Never read directly")]
     Clock(ClockError),
+
+    /// An error within creation of DMA buffers
+    #[expect(unused, reason = "Never read directly")]
+    DmaBuffer(DmaBufError),
 }
 
 impl From<Infallible> for Error {
@@ -324,5 +343,11 @@ impl From<WifiError> for Error {
 impl From<ClockError> for Error {
     fn from(error: ClockError) -> Self {
         Self::Clock(error)
+    }
+}
+
+impl From<DmaBufError> for Error {
+    fn from(error: DmaBufError) -> Self {
+        Self::DmaBuffer(error)
     }
 }
