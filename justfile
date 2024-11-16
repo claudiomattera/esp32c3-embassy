@@ -20,7 +20,7 @@ update-lockfile:
 
 # Fetch dependencies
 fetch:
-    @just cargo fetch
+    @just cargo fetch --locked
 
 # Check source code format
 check-format: fetch
