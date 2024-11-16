@@ -23,8 +23,8 @@ use esp_println::println;
 /// Setup logging
 ///
 /// To change the log level change the `env` section in `.cargo/config.toml`
-/// or remove it and set the environment variable `ESP_LOGLEVEL` manually
-/// before running `cargo run`.
+/// or remove it and set the environment variable `ESP_LOG` manually before
+/// running `cargo run`.
 ///
 /// This requires a clean rebuild because of
 /// <https://github.com/rust-lang/cargo/issues/10358>
