@@ -33,18 +33,18 @@ pub fn setup() {
     const LEVEL: Option<&'static str> = option_env!("ESP_LOG");
 
     // SAFETY:
-    //
+    // This function must be called once at the beginning of execution.
     let result = unsafe { set_logger_racy(&EspPrintlnLogger) };
 
     // SAFETY:
-    //
+    // This function must be called once at the beginning of execution.
     unsafe { result.unwrap_unchecked() };
 
-    if let Some(lvl) = LEVEL {
-        let level = LevelFilter::from_str(lvl).unwrap_or(LevelFilter::Off);
+    if let Some(level) = LEVEL {
+        let level = LevelFilter::from_str(level).unwrap_or(LevelFilter::Off);
 
         // SAFETY:
-        //
+        // This function must be called once at the beginning of execution.
         unsafe { set_max_level_racy(level) };
     }
 
