@@ -22,6 +22,7 @@ use embassy_time::Timer;
 
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 use embassy_sync::channel::Channel;
+use embassy_sync::channel::Sender;
 
 use esp_alloc::heap_allocator;
 
@@ -32,6 +33,7 @@ use esp_hal::dma::DmaDescriptor;
 use esp_hal::dma::DmaPriority;
 use esp_hal::dma::DmaRxBuf;
 use esp_hal::dma::DmaTxBuf;
+use esp_hal::gpio::GpioPin;
 use esp_hal::gpio::Input;
 use esp_hal::gpio::Level;
 use esp_hal::gpio::Output;
@@ -39,6 +41,12 @@ use esp_hal::gpio::Pull;
 use esp_hal::i2c::master::Config as I2cConfig;
 use esp_hal::i2c::master::I2c;
 use esp_hal::init as initialize_esp_hal;
+use esp_hal::peripherals::DMA;
+use esp_hal::peripherals::I2C0;
+use esp_hal::peripherals::RADIO_CLK;
+use esp_hal::peripherals::SPI2;
+use esp_hal::peripherals::TIMG0;
+use esp_hal::peripherals::WIFI;
 use esp_hal::prelude::*; // RateExtU32, main, ram
 use esp_hal::rng::Rng;
 use esp_hal::spi::master::Config as SpiConfig;
@@ -177,14 +185,14 @@ async fn main(spawner: Spawner) {
     // This is pointing to a valid value
     let history: &'static mut _ = unsafe { history.unwrap_unchecked() };
 
-    if let Err(error) = main_fallible(&spawner, history).await {
+    if let Err(error) = main_fallible(spawner, history).await {
         error!("Error while running firmware: {error:?}");
     }
 }
 
 /// Main task that can return an error
 async fn main_fallible(
-    spawner: &Spawner,
+    spawner: Spawner,
     history: &'static mut HistoryBuffer<(OffsetDateTime, Sample), 96>,
 ) -> Result<(), Error> {
     let peripherals = initialize_esp_hal({
@@ -200,6 +208,67 @@ async fn main_fallible(
 
     let rng = Rng::new(peripherals.RNG);
 
+    let clock = load_clock(
+        spawner,
+        peripherals.TIMG0,
+        peripherals.WIFI,
+        peripherals.RADIO_CLK,
+        rng,
+    )
+    .await?;
+
+    info!("Now is {}", clock.now()?);
+
+    info!("Turn off cold LED");
+    let mut cold_led = Output::new(peripherals.GPIO18, Level::High);
+    cold_led.set_low();
+
+    info!("History contains {} elements", history.len());
+
+    info!("Setup display task");
+    let sender = setup_display_task(
+        spawner,
+        DisplayPeripherals {
+            sclk: peripherals.GPIO6,
+            mosi: peripherals.GPIO7,
+            cs: peripherals.GPIO8,
+            busy: peripherals.GPIO9,
+            rst: peripherals.GPIO10,
+            dc: peripherals.GPIO19,
+            spi2: peripherals.SPI2,
+            dma: peripherals.DMA,
+        },
+        history,
+    )?;
+
+    info!("Setup sensor task");
+    setup_sensor_task(
+        spawner,
+        SensorPeripherals {
+            sda: peripherals.GPIO1,
+            scl: peripherals.GPIO2,
+            i2c0: peripherals.I2C0,
+            rng,
+        },
+        clock.clone(),
+        sender,
+    );
+
+    info!("Stay awake for {}s", AWAKE_PERIOD.as_secs());
+    Timer::after(AWAKE_PERIOD).await;
+
+    clock.save_to_rtc_memory(DEEP_SLEEP_DURATION);
+    enter_deep_sleep(peripherals.LPWR, DEEP_SLEEP_DURATION.into());
+}
+
+/// Load clock from RTC memory of from server
+async fn load_clock(
+    spawner: Spawner,
+    timg0: TIMG0,
+    wifi: WIFI,
+    radio_clk: RADIO_CLK,
+    rng: Rng,
+) -> Result<Clock, Error> {
     let clock = if let Some(clock) = Clock::from_rtc_memory() {
         info!("Clock loaded from RTC memory");
         clock
@@ -209,16 +278,8 @@ async fn main_fallible(
             String::<64>::try_from(WIFI_PASSWORD).map_err(|()| Error::ParseCredentials)?;
 
         info!("Connect to WiFi");
-        let timg0 = TimerGroup::new(peripherals.TIMG0);
-        let stack = connect_to_wifi(
-            spawner,
-            timg0,
-            rng,
-            peripherals.WIFI,
-            peripherals.RADIO_CLK,
-            (ssid, password),
-        )
-        .await?;
+        let timg0 = TimerGroup::new(timg0);
+        let stack = connect_to_wifi(spawner, timg0, rng, wifi, radio_clk, (ssid, password)).await?;
 
         info!("Synchronize clock from server");
         let mut http_client = HttpClient::new(stack, RngWrapper::from(rng));
@@ -230,34 +291,51 @@ async fn main_fallible(
         clock
     };
 
-    info!("Now is {}", clock.now()?);
+    Ok(clock)
+}
 
-    info!("Turn off cold LED");
-    let mut cold_led = Output::new(peripherals.GPIO18, Level::High);
-    cold_led.set_low();
+/// Peripherals used by the display
+struct DisplayPeripherals {
+    /// SPI sclk
+    sclk: GpioPin<6>,
 
-    info!("Create I²C bus");
-    let sda = peripherals.GPIO1;
-    let scl = peripherals.GPIO2;
+    /// SPI mosi
+    mosi: GpioPin<7>,
 
-    let i2c_config = I2cConfig {
-        frequency: 25_u32.kHz(),
-        ..Default::default()
-    };
-    let i2c = I2c::new(peripherals.I2C0, i2c_config)
-        .with_sda(sda)
-        .with_scl(scl)
-        .into_async();
+    /// SPI chip selection
+    cs: GpioPin<8>,
 
+    /// Busy signal
+    busy: GpioPin<9>,
+
+    /// Reset signal
+    rst: GpioPin<10>,
+
+    /// Command signal
+    dc: GpioPin<19>,
+
+    /// SPI interface
+    spi2: SPI2,
+
+    /// DMA interface
+    dma: DMA,
+}
+
+/// Setup display task
+fn setup_display_task(
+    spawner: Spawner,
+    peripherals: DisplayPeripherals,
+    history: &'static mut HistoryBuffer<(OffsetDateTime, Sample), 96>,
+) -> Result<Sender<'static, NoopRawMutex, (OffsetDateTime, Sample), 3>, Error> {
     info!("Create SPI bus");
     let spi_config = SpiConfig {
         frequency: 25_u32.kHz(),
         mode: SpiMode::Mode0,
         ..Default::default()
     };
-    let spi_bus = Spi::new_with_config(peripherals.SPI2, spi_config)
-        .with_sck(peripherals.GPIO6)
-        .with_mosi(peripherals.GPIO7)
+    let spi_bus = Spi::new_with_config(peripherals.spi2, spi_config)
+        .with_sck(peripherals.sclk)
+        .with_mosi(peripherals.mosi)
         .into_async();
 
     info!("Wrap SPI bus in a SPI DMA");
@@ -268,7 +346,7 @@ async fn main_fallible(
     let buffer: &'static mut _ = BUFFER.init([0; BUFFERS_SIZE]);
     let rx_buffer: &'static mut _ = RX_BUFFER.init([0; BUFFERS_SIZE]);
 
-    let dma = Dma::new(peripherals.DMA);
+    let dma = Dma::new(peripherals.dma);
     let dma_channel = dma.channel0.configure(false, DmaPriority::Priority0);
 
     let spi_dma: SpiDma<'_, Async> = spi_bus.with_dma(dma_channel);
@@ -278,12 +356,12 @@ async fn main_fallible(
     let spi_dma_bus = spi_dma.with_buffers(rx_buffers, tx_buffers);
 
     info!("Create PIN for SPI Chip Select");
-    let cs = Output::new(peripherals.GPIO8, Level::High);
+    let cs = Output::new(peripherals.cs, Level::High);
 
     info!("Create additional PINs");
-    let busy = Input::new(peripherals.GPIO9, Pull::Up);
-    let rst = Output::new(peripherals.GPIO10, Level::Low);
-    let dc = Output::new(peripherals.GPIO19, Level::Low);
+    let busy = Input::new(peripherals.busy, Pull::Up);
+    let rst = Output::new(peripherals.rst, Level::Low);
+    let dc = Output::new(peripherals.dc, Level::Low);
 
     info!("Create SPI device");
     let spi_device = ExclusiveDevice::new(spi_dma_bus, cs, Delay);
@@ -293,25 +371,52 @@ async fn main_fallible(
     let receiver = channel.receiver();
     let sender = channel.sender();
 
-    info!("History contains {} elements", history.len());
-
     info!("Spawn tasks");
-    spawner.must_spawn(sample_sensor_task(
-        i2c,
-        rng,
-        sender,
-        clock.clone(),
-        SAMPLING_PERIOD,
-    ));
     spawner.must_spawn(update_display_task(
         spi_device, busy, rst, dc, receiver, history,
     ));
 
-    info!("Stay awake for {}s", AWAKE_PERIOD.as_secs());
-    Timer::after(AWAKE_PERIOD).await;
+    Ok(sender)
+}
 
-    clock.save_to_rtc_memory(DEEP_SLEEP_DURATION);
-    enter_deep_sleep(peripherals.LPWR, DEEP_SLEEP_DURATION.into());
+/// Peripherals used by the sensor
+struct SensorPeripherals {
+    /// I²C SDA pin
+    sda: GpioPin<1>,
+    /// I²C SCL pin
+    scl: GpioPin<2>,
+
+    /// I²C interface
+    i2c0: I2C0,
+
+    /// Random number generator
+    rng: Rng,
+}
+
+/// Setup sensor task
+fn setup_sensor_task(
+    spawner: Spawner,
+    peripherals: SensorPeripherals,
+    clock: Clock,
+    sender: Sender<'static, NoopRawMutex, (OffsetDateTime, Sample), 3>,
+) {
+    info!("Create I²C bus");
+    let i2c_config = I2cConfig {
+        frequency: 25_u32.kHz(),
+        ..Default::default()
+    };
+    let i2c = I2c::new(peripherals.i2c0, i2c_config)
+        .with_sda(peripherals.sda)
+        .with_scl(peripherals.scl)
+        .into_async();
+
+    spawner.must_spawn(sample_sensor_task(
+        i2c,
+        peripherals.rng,
+        sender,
+        clock,
+        SAMPLING_PERIOD,
+    ));
 }
 
 /// An error

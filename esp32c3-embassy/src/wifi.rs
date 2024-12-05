@@ -62,7 +62,7 @@ pub static STOP_WIFI_SIGNAL: Signal<CriticalSectionRawMutex, ()> = Signal::new()
 
 /// Connect to WiFi
 pub async fn connect(
-    spawner: &Spawner,
+    spawner: Spawner,
     timg0: TimerGroup<'static, TIMG0, Blocking>,
     rng: Rng,
     wifi: WIFI,
