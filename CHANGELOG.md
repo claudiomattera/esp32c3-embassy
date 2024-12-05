@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update `reqwless` to version 0.13
 - Refactor function `main()` into smaller functions
 
+### Fixed
+
+- Use correct environment variable in log documentation
+
 
 ## [0.4.0] - 2024-11-05
 
