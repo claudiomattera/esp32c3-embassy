@@ -34,7 +34,7 @@ esp-hal = { workspace = true, features = ["esp32c3"] }
 esp-hal-embassy = { workspace = true, features = ["esp32c3", "executors"] }
 esp-backtrace = { workspace = true, features = ["esp32c3", "panic-handler", "exception-handler", "println"] }
 esp-println = { workspace = true, features = ["esp32c3", "log", "uart", "colors"] }
-esp-wifi = { workspace = true, features = ["esp32c3", "wifi", "async", "tcp", "ipv4", "dhcpv4", "embassy-net", "esp-alloc"] }
+esp-wifi = { workspace = true, features = ["esp32c3", "wifi", "esp-alloc"] }
 esp-alloc = { workspace = true }
 
 # Logging

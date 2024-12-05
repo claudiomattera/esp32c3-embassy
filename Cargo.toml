@@ -38,7 +38,7 @@ exclude = [
 embassy-executor = { version = "0.6", default-features = false }
 embassy-sync = { version = "0.6", default-features = false }
 embassy-time = { version = "0.3", default-features = false }
-embassy-net = { version = "0.4", default-features = false }
+embassy-net = { version = "0.5", default-features = false }
 
 # Hardware Abstraction Layer
 embedded-hal = { version = "1", default-features = false }
@@ -47,11 +47,11 @@ embedded-hal-bus = { version = "0.1", default-features = false }
 embedded-io-async = { version = "0.6", default-features = false }
 
 # ESP specifics
-esp-hal = { version = "0.21", default-features = false }
-esp-hal-embassy = { version = "0.4", default-features = false }
+esp-hal = { version = "0.22", default-features = false }
+esp-hal-embassy = { version = "0.5", default-features = false }
 esp-backtrace = { version = "0.14", default-features = false }
 esp-println = { version = "0.12", default-features = false }
-esp-wifi = { version = "0.10", default-features = false }
+esp-wifi = { version = "0.11", default-features = false }
 esp-alloc = { version = "0.5", default-features = false }
 
 # Logging
@@ -77,7 +77,7 @@ heapless = { version = "0.8", default-features = false }
 time = { version = "0.3", default-features = false }
 
 # HTTP
-reqwless = { version = "0.12", default-features = false }
+reqwless = { version = "0.13", default-features = false }
 
 # Random
 rand_core = { version = "0.6", default-features = false }

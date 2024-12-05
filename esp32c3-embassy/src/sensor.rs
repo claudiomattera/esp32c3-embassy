@@ -17,9 +17,8 @@ use embassy_time::Timer;
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 use embassy_sync::channel::Sender;
 
-use esp_hal::i2c::Error as I2cError;
-use esp_hal::i2c::I2c;
-use esp_hal::peripherals::I2C0;
+use esp_hal::i2c::master::Error as I2cError;
+use esp_hal::i2c::master::I2c;
 use esp_hal::rng::Rng;
 use esp_hal::Async;
 
@@ -41,7 +40,7 @@ const WARMUP_INTERVAL: Duration = Duration::from_millis(10);
 /// Task for sampling sensor
 #[embassy_executor::task]
 pub async fn sample_task(
-    i2c: I2c<'static, I2C0, Async>,
+    i2c: I2c<'static, Async>,
     mut rng: Rng,
     sender: Sender<'static, NoopRawMutex, Reading, 3>,
     clock: Clock,
@@ -73,7 +72,7 @@ pub async fn sample_task(
 
 /// Sample sensor and send reading to receiver
 async fn sample_and_send(
-    sensor: &mut AsyncBme280<I2c<'static, I2C0, Async>, Delay>,
+    sensor: &mut AsyncBme280<I2c<'static, Async>, Delay>,
     rng: &mut Rng,
     sender: &Sender<'static, NoopRawMutex, Reading, 3>,
     clock: &Clock,
@@ -101,9 +100,7 @@ async fn sample_and_send(
 }
 
 /// Initialize sensor
-async fn initialize(
-    bme280: &mut AsyncBme280<I2c<'static, I2C0, Async>, Delay>,
-) -> Result<(), I2cError> {
+async fn initialize(bme280: &mut AsyncBme280<I2c<'static, Async>, Delay>) -> Result<(), I2cError> {
     info!("Initialize");
     bme280.init().await?;
 

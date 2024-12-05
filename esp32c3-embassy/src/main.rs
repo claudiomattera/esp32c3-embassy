@@ -33,18 +33,17 @@ use esp_hal::dma::DmaPriority;
 use esp_hal::dma::DmaRxBuf;
 use esp_hal::dma::DmaTxBuf;
 use esp_hal::gpio::Input;
-use esp_hal::gpio::Io;
 use esp_hal::gpio::Level;
 use esp_hal::gpio::Output;
 use esp_hal::gpio::Pull;
-use esp_hal::i2c::I2c;
+use esp_hal::i2c::master::Config as I2cConfig;
+use esp_hal::i2c::master::I2c;
 use esp_hal::init as initialize_esp_hal;
-use esp_hal::peripherals::SPI2;
 use esp_hal::prelude::*; // RateExtU32, main, ram
 use esp_hal::rng::Rng;
+use esp_hal::spi::master::Config as SpiConfig;
 use esp_hal::spi::master::Spi;
 use esp_hal::spi::master::SpiDma;
-use esp_hal::spi::FullDuplexMode;
 use esp_hal::spi::SpiMode;
 use esp_hal::timer::systimer::SystemTimer;
 use esp_hal::timer::systimer::Target;
@@ -233,22 +232,33 @@ async fn main_fallible(
 
     info!("Now is {}", clock.now()?);
 
-    let io = Io::new(peripherals.GPIO, peripherals.IO_MUX);
-
     info!("Turn off cold LED");
-    let mut cold_led = Output::new(io.pins.gpio18, Level::High);
+    let mut cold_led = Output::new(peripherals.GPIO18, Level::High);
     cold_led.set_low();
 
     info!("Create I²C bus");
-    let sda = io.pins.gpio1;
-    let scl = io.pins.gpio2;
+    let sda = peripherals.GPIO1;
+    let scl = peripherals.GPIO2;
 
-    let i2c = I2c::new_async(peripherals.I2C0, sda, scl, 25_u32.kHz());
+    let i2c_config = I2cConfig {
+        frequency: 25_u32.kHz(),
+        ..Default::default()
+    };
+    let i2c = I2c::new(peripherals.I2C0, i2c_config)
+        .with_sda(sda)
+        .with_scl(scl)
+        .into_async();
 
     info!("Create SPI bus");
-    let spi_bus = Spi::new(peripherals.SPI2, 25_u32.kHz(), SpiMode::Mode0)
-        .with_sck(io.pins.gpio6)
-        .with_mosi(io.pins.gpio7);
+    let spi_config = SpiConfig {
+        frequency: 25_u32.kHz(),
+        mode: SpiMode::Mode0,
+        ..Default::default()
+    };
+    let spi_bus = Spi::new_with_config(peripherals.SPI2, spi_config)
+        .with_sck(peripherals.GPIO6)
+        .with_mosi(peripherals.GPIO7)
+        .into_async();
 
     info!("Wrap SPI bus in a SPI DMA");
     let descriptors: &'static mut _ = DESCRIPTORS.init([DmaDescriptor::EMPTY; DESCRIPTORS_SIZE]);
@@ -259,23 +269,21 @@ async fn main_fallible(
     let rx_buffer: &'static mut _ = RX_BUFFER.init([0; BUFFERS_SIZE]);
 
     let dma = Dma::new(peripherals.DMA);
-    let dma_channel = dma
-        .channel0
-        .configure_for_async(false, DmaPriority::Priority0);
+    let dma_channel = dma.channel0.configure(false, DmaPriority::Priority0);
 
-    let spi_dma: SpiDma<'_, SPI2, FullDuplexMode, Async> = spi_bus.with_dma(dma_channel);
+    let spi_dma: SpiDma<'_, Async> = spi_bus.with_dma(dma_channel);
 
     let tx_buffers = DmaTxBuf::new(descriptors, buffer)?;
     let rx_buffers = DmaRxBuf::new(rx_descriptors, rx_buffer)?;
     let spi_dma_bus = spi_dma.with_buffers(rx_buffers, tx_buffers);
 
     info!("Create PIN for SPI Chip Select");
-    let cs = Output::new(io.pins.gpio8, Level::High);
+    let cs = Output::new(peripherals.GPIO8, Level::High);
 
     info!("Create additional PINs");
-    let busy = Input::new(io.pins.gpio9, Pull::Up);
-    let rst = Output::new(io.pins.gpio10, Level::Low);
-    let dc = Output::new(io.pins.gpio19, Level::Low);
+    let busy = Input::new(peripherals.GPIO9, Pull::Up);
+    let rst = Output::new(peripherals.GPIO10, Level::Low);
+    let dc = Output::new(peripherals.GPIO19, Level::Low);
 
     info!("Create SPI device");
     let spi_device = ExclusiveDevice::new(spi_dma_bus, cs, Delay);

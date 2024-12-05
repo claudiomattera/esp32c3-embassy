@@ -15,9 +15,6 @@ use embassy_net::tcp::Error as TcpError;
 use embassy_net::Stack;
 use log::debug;
 
-use esp_wifi::wifi::WifiDevice;
-use esp_wifi::wifi::WifiStaDevice;
-
 use reqwless::client::HttpClient;
 use reqwless::client::TlsConfig;
 use reqwless::client::TlsVerify;
@@ -45,7 +42,7 @@ pub trait ClientTrait {
 /// HTTP client
 pub struct Client {
     /// Wifi stack
-    stack: &'static Stack<WifiDevice<'static, WifiStaDevice>>,
+    stack: Stack<'static>,
 
     /// Random numbers generator
     rng: RngWrapper,
@@ -62,7 +59,7 @@ pub struct Client {
 
 impl Client {
     /// Create a new client
-    pub fn new(stack: &'static Stack<WifiDevice<'static, WifiStaDevice>>, rng: RngWrapper) -> Self {
+    pub fn new(stack: Stack<'static>, rng: RngWrapper) -> Self {
         debug!("Create TCP client state");
         let tcp_client_state = TcpClientState::<1, 4096, 4096>::new();
 
