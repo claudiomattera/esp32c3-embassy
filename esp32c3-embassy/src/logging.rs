@@ -36,9 +36,11 @@ pub fn setup() {
     // This function must be called once at the beginning of execution.
     let result = unsafe { set_logger_racy(&EspPrintlnLogger) };
 
-    // SAFETY:
-    // This function must be called once at the beginning of execution.
-    unsafe { result.unwrap_unchecked() };
+    if result.is_err() {
+        // Could not set default logger.
+        // There is nothing we can do; logging will not work.
+        return;
+    }
 
     if let Some(level) = LEVEL {
         let level = LevelFilter::from_str(level).unwrap_or(LevelFilter::Off);
