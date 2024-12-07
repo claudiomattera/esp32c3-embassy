@@ -11,6 +11,9 @@ use esp_hal::rng::Rng;
 use uom::si::f32::Pressure;
 use uom::si::f32::Ratio as Humidity;
 use uom::si::f32::ThermodynamicTemperature as Temperature;
+use uom::si::pressure::hectopascal;
+use uom::si::ratio::percent;
+use uom::si::thermodynamic_temperature::degree_celsius;
 
 use time::OffsetDateTime;
 
@@ -42,11 +45,9 @@ impl Sample {
         let pressure = pressure_seed * (1010.0 - 990.0) + 990.0;
 
         Self::from((
-            uom::si::f32::ThermodynamicTemperature::new::<
-                uom::si::thermodynamic_temperature::degree_celsius,
-            >(temperature),
-            uom::si::f32::Ratio::new::<uom::si::ratio::percent>(humidity),
-            uom::si::f32::Pressure::new::<uom::si::pressure::hectopascal>(pressure),
+            Temperature::new::<degree_celsius>(temperature),
+            Humidity::new::<percent>(humidity),
+            Pressure::new::<hectopascal>(pressure),
         ))
     }
 }

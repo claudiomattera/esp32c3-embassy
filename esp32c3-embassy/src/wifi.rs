@@ -12,10 +12,14 @@ use log::info;
 
 use embassy_executor::Spawner;
 
+use embassy_net::new as new_network_stack;
+
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::signal::Signal;
 
 use esp_wifi::init as initialize_wifi;
+use esp_wifi::wifi::new_with_mode as new_wifi_with_mode;
+use esp_wifi::wifi::wifi_state;
 use esp_wifi::wifi::ClientConfiguration;
 use esp_wifi::wifi::Configuration;
 use esp_wifi::wifi::WifiController;
@@ -76,14 +80,13 @@ pub async fn connect(
     let wifi_controller = initialize_wifi(timg0.timer0, rng, radio_clock_control)?;
     let wifi_controller: &'static mut _ = WIFI_CONTROLLER.init(wifi_controller);
 
-    let (wifi_interface, controller) =
-        esp_wifi::wifi::new_with_mode(wifi_controller, wifi, WifiStaDevice)?;
+    let (wifi_interface, controller) = new_wifi_with_mode(wifi_controller, wifi, WifiStaDevice)?;
 
     let config = Config::dhcpv4(DhcpConfig::default());
 
     debug!("Initialize network stack");
     let stack_resources: &'static mut _ = STACK_RESOURCES.init(StackResources::new());
-    let (stack, runner) = embassy_net::new(wifi_interface, config, stack_resources, seed);
+    let (stack, runner) = new_network_stack(wifi_interface, config, stack_resources, seed);
 
     spawner.must_spawn(connection(controller, ssid, password));
     spawner.must_spawn(net_task(runner));
@@ -133,7 +136,7 @@ async fn connection_fallible(
     debug!("Start connection");
     debug!("Device capabilities: {:?}", controller.capabilities());
     loop {
-        if esp_wifi::wifi::wifi_state() == WifiState::StaConnected {
+        if wifi_state() == WifiState::StaConnected {
             // wait until we're no longer connected
             controller.wait_for_event(WifiEvent::StaDisconnected).await;
             Timer::after(Duration::from_millis(5000)).await;
