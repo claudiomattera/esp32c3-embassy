@@ -34,7 +34,7 @@ impl RngCore for RngWrapper {
 
     fn fill_bytes(&mut self, dest: &mut [u8]) {
         for value in dest.iter_mut() {
-            let [random_value, _, _, _] = self.next_u32().to_be_bytes();
+            let [random_value, _, _, _] = self.next_u32().to_ne_bytes();
             *value = random_value;
         }
     }
@@ -54,7 +54,7 @@ impl CryptoRng for RngWrapper {}
     reason = "This is still readable"
 )]
 fn u32_pair_to_u64(first: u32, second: u32) -> u64 {
-    let [a, b, c, d] = first.to_be_bytes();
-    let [e, f, g, h] = second.to_be_bytes();
-    u64::from_be_bytes([a, b, c, d, e, f, g, h])
+    let [a, b, c, d] = first.to_ne_bytes();
+    let [e, f, g, h] = second.to_ne_bytes();
+    u64::from_ne_bytes([a, b, c, d, e, f, g, h])
 }
