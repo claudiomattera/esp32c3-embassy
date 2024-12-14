@@ -364,7 +364,7 @@ fn setup_display_task(
     let dc = Output::new(peripherals.dc, Level::Low);
 
     info!("Create SPI device");
-    let spi_device = ExclusiveDevice::new(spi_dma_bus, cs, Delay);
+    let spi_device = ExclusiveDevice::new(spi_dma_bus, cs, Delay)?;
 
     info!("Create channel");
     let channel: &'static mut _ = CHANNEL.init(Channel::new());

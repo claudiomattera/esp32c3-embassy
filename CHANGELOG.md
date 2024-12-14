@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update `esp-hal-embassy` to version 0.5
 - Update `esp-wifi` to version 0.11
 - Update `reqwless` to version 0.13
+- Update `embedded-hal-bus` to version 0.2
 - Refactor function `main()` into smaller functions
 
 ### Fixed
