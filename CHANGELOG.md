@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Use correct environment variable in log documentation
+- Use correct hash for `rust-toolchain.toml` in Nix flake (contributed by [MaxKiv](https://github.com/MaxKiv/))
 
 
 ## [0.4.0] - 2024-11-05
