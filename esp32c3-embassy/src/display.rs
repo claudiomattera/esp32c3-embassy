@@ -27,9 +27,7 @@ use time::OffsetDateTime;
 use esp_hal::gpio::AnyPin;
 use esp_hal::gpio::Input;
 use esp_hal::gpio::Output;
-use esp_hal::peripherals::SPI2;
 use esp_hal::spi::master::SpiDmaBus;
-use esp_hal::spi::FullDuplexMode;
 use esp_hal::Async;
 
 use heapless::HistoryBuffer;
@@ -50,11 +48,7 @@ use crate::domain::Sample;
 /// Task for displaying samples
 #[embassy_executor::task]
 pub async fn update_task(
-    spi_device: ExclusiveDevice<
-        SpiDmaBus<'static, SPI2, FullDuplexMode, Async>,
-        Output<'static, AnyPin>,
-        Delay,
-    >,
+    spi_device: ExclusiveDevice<SpiDmaBus<'static, Async>, Output<'static, AnyPin>, Delay>,
     busy: Input<'static, AnyPin>,
     rst: Output<'static, AnyPin>,
     dc: Output<'static, AnyPin>,

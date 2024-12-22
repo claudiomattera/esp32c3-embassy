@@ -23,8 +23,8 @@ use esp_println::println;
 /// Setup logging
 ///
 /// To change the log level change the `env` section in `.cargo/config.toml`
-/// or remove it and set the environment variable `ESP_LOGLEVEL` manually
-/// before running `cargo run`.
+/// or remove it and set the environment variable `ESP_LOG` manually before
+/// running `cargo run`.
 ///
 /// This requires a clean rebuild because of
 /// <https://github.com/rust-lang/cargo/issues/10358>
@@ -33,18 +33,20 @@ pub fn setup() {
     const LEVEL: Option<&'static str> = option_env!("ESP_LOG");
 
     // SAFETY:
-    //
+    // This function must be called once at the beginning of execution.
     let result = unsafe { set_logger_racy(&EspPrintlnLogger) };
 
-    // SAFETY:
-    //
-    unsafe { result.unwrap_unchecked() };
+    if result.is_err() {
+        // Could not set default logger.
+        // There is nothing we can do; logging will not work.
+        return;
+    }
 
-    if let Some(lvl) = LEVEL {
-        let level = LevelFilter::from_str(lvl).unwrap_or(LevelFilter::Off);
+    if let Some(level) = LEVEL {
+        let level = LevelFilter::from_str(level).unwrap_or(LevelFilter::Off);
 
         // SAFETY:
-        //
+        // This function must be called once at the beginning of execution.
         unsafe { set_max_level_racy(level) };
     }
 

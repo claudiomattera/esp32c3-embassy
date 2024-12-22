@@ -242,7 +242,6 @@ where
     }
 
     #[cfg(feature = "draw-target")]
-
     ///
     ///
     /// # Errors

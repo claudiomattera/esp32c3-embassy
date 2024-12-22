@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2024-12-22
+
+### Changed
+
+- Update `embassy-net` to version 0.5
+- Update `esp-hal` to version 0.22
+- Update `esp-hal-embassy` to version 0.5
+- Update `esp-wifi` to version 0.11
+- Update `reqwless` to version 0.13
+- Update `embedded-hal-bus` to version 0.2
+- Refactor function `main()` into smaller functions
+
+### Fixed
+
+- Use correct environment variable in log documentation
+- Use correct hash for `rust-toolchain.toml` in Nix flake (contributed by [MaxKiv](https://github.com/MaxKiv/))
+
+
 ## [0.4.0] - 2024-11-05
 
 ### Added
@@ -62,3 +80,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.2.0]: https://gitlab.com/claudiomattera/esp32c3-embassy/-/tags/0.2.0
 [0.3.0]: https://gitlab.com/claudiomattera/esp32c3-embassy/-/tags/0.3.0
 [0.4.0]: https://gitlab.com/claudiomattera/esp32c3-embassy/-/tags/0.4.0
+[0.5.0]: https://gitlab.com/claudiomattera/esp32c3-embassy/-/tags/0.5.0
