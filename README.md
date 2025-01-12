@@ -39,7 +39,7 @@ The firmware uses Embassy.
 
 It starts by loading the current time from RTC Fast memory.
 If it is zero (as Unix timestamp), it means the clock has not been synchronized yet.
-So it connects to the WiFi network, and by making an HTTPS request to [WorldTimeAPI] to get the current time and time offset.
+So it connects to the WiFi network, and by making an HTTPS request to [Adafruit IO] to get the current time and time offset.
 This might be changed to use SNTP in the future, though that does not provide information about the time offset.
 Then it disconnects from the WiFi network (this is required to be able to enter deep sleep later).
 
@@ -62,7 +62,7 @@ Or even for using asynchronous I²C and SPI interface.
 And definitely there is no actual reason for using a TLS layer and connecting over HTTPS rather than HTTP.
 However, as mentioned earlier, this application is meant as a reference / example / starting point for more complex projects.
 
-[WorldTimeAPI]: https://worldtimeapi.org/
+[Adafruit IO]: https://io.adafruit.com/
 
 
 Connections

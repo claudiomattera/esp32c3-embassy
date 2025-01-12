@@ -64,5 +64,8 @@ reqwless = { workspace = true, features = ["embedded-tls", "log"] }
 # Random
 rand_core = { workspace = true }
 
+# JSON
+microjson = { workspace = true}
+
 [lints]
 workspace = true

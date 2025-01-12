@@ -72,6 +72,8 @@ use esp_backtrace as _;
 
 use static_cell::StaticCell;
 
+mod adafruitio;
+
 mod logging;
 use self::logging::setup as setup_logging;
 
@@ -107,8 +109,6 @@ mod wifi;
 use self::wifi::connect as connect_to_wifi;
 use self::wifi::Error as WifiError;
 use self::wifi::STOP_WIFI_SIGNAL;
-
-mod worldtimeapi;
 
 /// Period to wait between readings
 const SAMPLING_PERIOD: Duration = Duration::from_secs(60);

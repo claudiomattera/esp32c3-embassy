@@ -15,9 +15,9 @@ use time::error::ComponentRange as TimeComponentRange;
 use time::OffsetDateTime;
 use time::UtcOffset;
 
+use crate::adafruitio::AdafruitIoClient as _;
+use crate::adafruitio::Error as AdafruitIoError;
 use crate::http::Client as HttpClient;
-use crate::worldtimeapi::Error as WorldTimeApiError;
-use crate::worldtimeapi::WorldTimeApiClient as _;
 
 /// Stored boot time between deep sleep cycles
 ///
@@ -145,7 +145,7 @@ pub enum Error {
     InvalidInOffset,
 
     /// Error synchronizing time from World Time API
-    Synchronization(#[expect(unused, reason = "Never read directly")] WorldTimeApiError),
+    Synchronization(#[expect(unused, reason = "Never read directly")] AdafruitIoError),
 }
 
 impl From<TimeComponentRange> for Error {
@@ -154,8 +154,8 @@ impl From<TimeComponentRange> for Error {
     }
 }
 
-impl From<WorldTimeApiError> for Error {
-    fn from(error: WorldTimeApiError) -> Self {
+impl From<AdafruitIoError> for Error {
+    fn from(error: AdafruitIoError) -> Self {
         Self::Synchronization(error)
     }
 }

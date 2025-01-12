@@ -896,6 +896,7 @@ dependencies = [
  "esp-wifi",
  "heapless 0.8.0",
  "log",
+ "microjson",
  "rand_core",
  "reqwless",
  "static_cell",
@@ -1176,6 +1177,12 @@ name = "memchr"
 version = "2.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
+
+[[package]]
+name = "microjson"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "66f607672273239fe03881b7ce95721079e1d08f6a7ef98da2b144f68fe1502c"
 
 [[package]]
 name = "micromath"
