@@ -11,6 +11,7 @@ edition = "2021"
 readme = "README.md"
 homepage = "https://gitlab.com/claudiomattera/esp32c3-embassy"
 repository = "https://gitlab.com/claudiomattera/esp32c3-embassy"
+license = "MIT OR Apache-2.0"
 keywords = [
     "display",
     "sensor",

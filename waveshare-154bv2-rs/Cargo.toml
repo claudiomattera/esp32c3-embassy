@@ -7,7 +7,7 @@ description = "A crate for interfacing with E-INK displays"
 readme = { workspace = true }
 homepage = { workspace = true }
 repository = { workspace = true }
-license = "MIT OR Apache-2.0"
+license = { workspace = true }
 rust-version = "1.75"
 keywords = { workspace = true }
 categories = { workspace = true }

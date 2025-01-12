@@ -137,13 +137,6 @@ License
 
 Copyright Claudio Mattera 2024-2025
 
-### Main Firmware
-
-You are free to copy, modify, and distribute this firmware with attribution under the terms of the MPL 2.0 license ([`LICENSE-MPL-2.0.md`](./LICENSE-MPL-2.0.md) or <https://opensource.org/licenses/MPL-2.0>).
-
-
-### Display Driver
-
 You are free to copy, modify, and distribute this driver with attribution under the terms of either
 
 *   Apache License, Version 2.0

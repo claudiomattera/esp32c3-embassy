@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Use [Adafruit IO](https://io.adafruit.com) API instead of WorldTimeAPI to fetch current time
+- Change license to MIT + APACHE-2.0 for main firmware
 
 
 ## [0.5.0] - 2024-12-22

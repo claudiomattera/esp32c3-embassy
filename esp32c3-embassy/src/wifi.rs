@@ -1,8 +1,10 @@
 // Copyright Claudio Mattera 2024-2025.
 //
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+// Distributed under the MIT License or the Apache 2.0 License at your option.
+// See the accompanying files LICENSE-MIT.txt and LICENSE-APACHE-2.0.txt, or
+// online at
+// https://opensource.org/licenses/MIT
+// https://opensource.org/licenses/Apache-2.0
 
 //! Functions and task for WiFi connection
 
