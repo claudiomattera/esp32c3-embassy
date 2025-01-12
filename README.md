@@ -135,7 +135,7 @@ See the [Contributing Guide](./CONTRIBUTING.md) for more information about devel
 License
 ----
 
-Copyright Claudio Mattera 2024
+Copyright Claudio Mattera 2024-2025
 
 ### Main Firmware
 

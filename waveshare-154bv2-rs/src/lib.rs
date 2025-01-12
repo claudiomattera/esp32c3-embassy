@@ -1,4 +1,4 @@
-// Copyright Claudio Mattera 2024.
+// Copyright Claudio Mattera 2024-2025.
 //
 // Distributed under the MIT License or the Apache 2.0 License at your option.
 // See the accompanying files License-MIT.txt and License-Apache-2.0.txt, or
