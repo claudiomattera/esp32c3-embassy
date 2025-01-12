@@ -12,8 +12,6 @@ use log::info;
 
 use embassy_executor::Spawner;
 
-use embassy_net::new as new_network_stack;
-
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::signal::Signal;
 
@@ -31,6 +29,7 @@ use esp_wifi::wifi::WifiState;
 use esp_wifi::EspWifiController;
 use esp_wifi::InitializationError as WifiInitializationError;
 
+use embassy_net::new as new_network_stack;
 use embassy_net::Config;
 use embassy_net::DhcpConfig;
 use embassy_net::Runner;
