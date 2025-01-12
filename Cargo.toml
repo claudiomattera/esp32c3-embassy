@@ -148,6 +148,10 @@ shadow_same = "warn"
 single_char_lifetime_names = "warn"
 std_instead_of_alloc = "warn"
 
+# Additional (allow)
+# No allocation used in the firmware
+large_stack_arrays = "allow"
+
 [profile.release]
 strip = "debuginfo"
 lto = "fat"

@@ -11,7 +11,6 @@
 use core::cell::UnsafeCell;
 
 /// An `UnsafeCell` that implements `Sync`
-#[expect(clippy::module_name_repetitions, reason = "Allow repeating the name")]
 pub struct SyncUnsafeCell<T> {
     /// The inner cell
     inner: UnsafeCell<T>,
