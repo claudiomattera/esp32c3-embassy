@@ -1426,6 +1426,7 @@ version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fb1be74cb817fa6dbda417110f575d9b9ad5488817f1eb65f2f6468fe6d5d663"
 dependencies = [
+ "alloc",
  "base64",
  "buffered-io",
  "embedded-io",

@@ -59,7 +59,7 @@ heapless = { workspace = true }
 time = { workspace = true }
 
 # HTTP
-reqwless = { workspace = true, features = ["embedded-tls", "log"] }
+reqwless = { workspace = true, features = ["alloc", "embedded-tls", "log"] }
 
 # Random
 rand_core = { workspace = true }
