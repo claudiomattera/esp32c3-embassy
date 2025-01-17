@@ -385,6 +385,7 @@ fn setup_display_task(
 struct SensorPeripherals {
     /// I²C SDA pin
     sda: GpioPin<1>,
+
     /// I²C SCL pin
     scl: GpioPin<2>,
 
