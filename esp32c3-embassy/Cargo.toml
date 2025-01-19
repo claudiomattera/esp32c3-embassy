@@ -20,7 +20,7 @@ default = []
 # Embassy
 embassy-executor = { workspace = true, features = ["task-arena-size-81920"] }
 embassy-sync = { workspace = true }
-embassy-time = { workspace = true, features = ["generic-queue"] }
+embassy-time = { workspace = true }
 embassy-net = { workspace = true, features = ["dhcpv4", "dns", "tcp", "udp"] }
 
 # Hardware Abstraction Layer
@@ -30,10 +30,10 @@ embedded-hal-bus = { workspace = true, features = ["async"] }
 embedded-io-async = { workspace = true }
 
 # ESP specifics
-esp-hal = { workspace = true, features = ["esp32c3"] }
+esp-hal = { workspace = true, features = ["esp32c3", "unstable"] }
 esp-hal-embassy = { workspace = true, features = ["esp32c3", "executors"] }
 esp-backtrace = { workspace = true, features = ["esp32c3", "panic-handler", "exception-handler", "println"] }
-esp-println = { workspace = true, features = ["esp32c3", "log", "uart", "colors"] }
+esp-println = { workspace = true, features = ["esp32c3", "log", "uart", "colors", "critical-section"] }
 esp-wifi = { workspace = true, features = ["esp32c3", "wifi", "esp-alloc"] }
 esp-alloc = { workspace = true }
 

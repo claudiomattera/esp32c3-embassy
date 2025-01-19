@@ -11,7 +11,7 @@
 use embassy_time::Duration;
 use embassy_time::Instant;
 
-use esp_hal::macros::ram;
+use esp_hal::ram;
 
 use time::error::ComponentRange as TimeComponentRange;
 use time::OffsetDateTime;

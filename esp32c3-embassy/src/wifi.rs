@@ -46,7 +46,6 @@ use esp_hal::peripherals::TIMG0;
 use esp_hal::peripherals::WIFI;
 use esp_hal::rng::Rng;
 use esp_hal::timer::timg::TimerGroup;
-use esp_hal::Blocking;
 
 use heapless::String;
 
@@ -68,7 +67,7 @@ pub static STOP_WIFI_SIGNAL: Signal<CriticalSectionRawMutex, ()> = Signal::new()
 /// Connect to WiFi
 pub async fn connect(
     spawner: Spawner,
-    timg0: TimerGroup<'static, TIMG0, Blocking>,
+    timg0: TimerGroup<TIMG0>,
     rng: Rng,
     wifi: WIFI,
     radio_clock_control: RADIO_CLK,

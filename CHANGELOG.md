@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Use [Adafruit IO](https://io.adafruit.com) API instead of WorldTimeAPI to fetch current time
 - Change license to MIT + APACHE-2.0 for main firmware
+- Update `embassy-executor` to version 0.7
+- Update `embassy-time` to version 0.4
+- Update `embassy-net` to version 0.6
+- Update `esp-hal` to version 0.23
+- Update `esp-hal-embassy` to version 0.6
+- Update `esp-backtrace` to version 0.15
+- Update `esp-println` to version 0.13
+- Update `esp-wifi` to version 0.12
+- Enable feature `critical-section` on crate `esp-println`
 
 
 ## [0.5.0] - 2024-12-22
