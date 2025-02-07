@@ -1,8 +1,10 @@
-// Copyright Claudio Mattera 2024.
+// Copyright Claudio Mattera 2024-2025.
 //
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+// Distributed under the MIT License or the Apache 2.0 License at your option.
+// See the accompanying files LICENSE-MIT.txt and LICENSE-APACHE-2.0.txt, or
+// online at
+// https://opensource.org/licenses/MIT
+// https://opensource.org/licenses/Apache-2.0
 
 //! Functions and task for WiFi connection
 
@@ -11,8 +13,6 @@ use log::error;
 use log::info;
 
 use embassy_executor::Spawner;
-
-use embassy_net::new as new_network_stack;
 
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::signal::Signal;
@@ -31,6 +31,7 @@ use esp_wifi::wifi::WifiState;
 use esp_wifi::EspWifiController;
 use esp_wifi::InitializationError as WifiInitializationError;
 
+use embassy_net::new as new_network_stack;
 use embassy_net::Config;
 use embassy_net::DhcpConfig;
 use embassy_net::Runner;
@@ -45,7 +46,6 @@ use esp_hal::peripherals::TIMG0;
 use esp_hal::peripherals::WIFI;
 use esp_hal::rng::Rng;
 use esp_hal::timer::timg::TimerGroup;
-use esp_hal::Blocking;
 
 use heapless::String;
 
@@ -67,7 +67,7 @@ pub static STOP_WIFI_SIGNAL: Signal<CriticalSectionRawMutex, ()> = Signal::new()
 /// Connect to WiFi
 pub async fn connect(
     spawner: Spawner,
-    timg0: TimerGroup<'static, TIMG0, Blocking>,
+    timg0: TimerGroup<TIMG0>,
     rng: Rng,
     wifi: WIFI,
     radio_clock_control: RADIO_CLK,

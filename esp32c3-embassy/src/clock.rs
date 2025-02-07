@@ -1,23 +1,25 @@
-// Copyright Claudio Mattera 2024.
+// Copyright Claudio Mattera 2024-2025.
 //
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+// Distributed under the MIT License or the Apache 2.0 License at your option.
+// See the accompanying files LICENSE-MIT.txt and LICENSE-APACHE-2.0.txt, or
+// online at
+// https://opensource.org/licenses/MIT
+// https://opensource.org/licenses/Apache-2.0
 
 //! Data types and function for keeping time and synchronizing clock
 
 use embassy_time::Duration;
 use embassy_time::Instant;
 
-use esp_hal::macros::ram;
+use esp_hal::ram;
 
 use time::error::ComponentRange as TimeComponentRange;
 use time::OffsetDateTime;
 use time::UtcOffset;
 
+use crate::adafruitio::AdafruitIoClient as _;
+use crate::adafruitio::Error as AdafruitIoError;
 use crate::http::Client as HttpClient;
-use crate::worldtimeapi::Error as WorldTimeApiError;
-use crate::worldtimeapi::WorldTimeApiClient as _;
 
 /// Stored boot time between deep sleep cycles
 ///
@@ -145,7 +147,7 @@ pub enum Error {
     InvalidInOffset,
 
     /// Error synchronizing time from World Time API
-    Synchronization(#[expect(unused, reason = "Never read directly")] WorldTimeApiError),
+    Synchronization(#[expect(unused, reason = "Never read directly")] AdafruitIoError),
 }
 
 impl From<TimeComponentRange> for Error {
@@ -154,8 +156,8 @@ impl From<TimeComponentRange> for Error {
     }
 }
 
-impl From<WorldTimeApiError> for Error {
-    fn from(error: WorldTimeApiError) -> Self {
+impl From<AdafruitIoError> for Error {
+    fn from(error: AdafruitIoError) -> Self {
         Self::Synchronization(error)
     }
 }

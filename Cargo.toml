@@ -5,12 +5,13 @@ members = [
 ]
 
 [workspace.package]
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Claudio Mattera <dev@claudiomattera.it>"]
 edition = "2021"
 readme = "README.md"
 homepage = "https://gitlab.com/claudiomattera/esp32c3-embassy"
 repository = "https://gitlab.com/claudiomattera/esp32c3-embassy"
+license = "MIT OR Apache-2.0"
 keywords = [
     "display",
     "sensor",
@@ -35,10 +36,10 @@ exclude = [
 
 [workspace.dependencies]
 # Embassy
-embassy-executor = { version = "0.6", default-features = false }
+embassy-executor = { version = "0.7", default-features = false }
 embassy-sync = { version = "0.6", default-features = false }
-embassy-time = { version = "0.3", default-features = false }
-embassy-net = { version = "0.5", default-features = false }
+embassy-time = { version = "0.4", default-features = false }
+embassy-net = { version = "0.6", default-features = false }
 
 # Hardware Abstraction Layer
 embedded-hal = { version = "1", default-features = false }
@@ -47,12 +48,12 @@ embedded-hal-bus = { version = "0.2", default-features = false }
 embedded-io-async = { version = "0.6", default-features = false }
 
 # ESP specifics
-esp-hal = { version = "0.22", default-features = false }
-esp-hal-embassy = { version = "0.5", default-features = false }
-esp-backtrace = { version = "0.14", default-features = false }
-esp-println = { version = "0.12", default-features = false }
-esp-wifi = { version = "0.11", default-features = false }
-esp-alloc = { version = "0.5", default-features = false }
+esp-hal = { version = "0.23", default-features = false }
+esp-hal-embassy = { version = "0.6", default-features = false }
+esp-backtrace = { version = "0.15", default-features = false }
+esp-println = { version = "0.13", default-features = false }
+esp-wifi = { version = "0.12", default-features = false }
+esp-alloc = { version = "0.6", default-features = false }
 
 # Logging
 log = { version = "0.4", default-features = false }
@@ -80,7 +81,10 @@ time = { version = "0.3", default-features = false }
 reqwless = { version = "0.13", default-features = false }
 
 # Random
-rand_core = { version = "0.6", default-features = false }
+rand_core = { version = "0.9", default-features = false }
+
+# JSON
+microjson = { version = "0.1", default-features = false }
 
 [workspace.lints.rust]
 missing_docs = "allow"
@@ -144,6 +148,10 @@ multiple_unsafe_ops_per_block = "warn"
 shadow_same = "warn"
 single_char_lifetime_names = "warn"
 std_instead_of_alloc = "warn"
+
+# Additional (allow)
+# No allocation used in the firmware
+large_stack_arrays = "allow"
 
 [profile.release]
 strip = "debuginfo"

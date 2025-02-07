@@ -18,8 +18,8 @@ The firmware runs on a [ESP32-C3] microcontroller, samples environment data (tem
 In particular:
 
 * It uses [Embassy][embassy] as a general framework, and makes everything async, including communicating with sensor and display over I²C and SPI with [`embedded-hal-async`][embedded-hal-async].
-* It is implemented on bare metal with `no_std`, but with `alloc` (it is required for WiFi).
-* It is up-to-date with the latest crate versions (as of 2024-12-22).
+* It is implemented on bare metal with `no_std`, but with `alloc` (it is only required for WiFi, and for HTTPS with RSA certificates).
+* It is up-to-date with the latest crate versions (as of 2025-02-07).
 * It uses [`reqwless`][reqwless] for HTTP requests and TLS.
 
 It is mostly meant as a reference / example / starting point.
@@ -39,7 +39,7 @@ The firmware uses Embassy.
 
 It starts by loading the current time from RTC Fast memory.
 If it is zero (as Unix timestamp), it means the clock has not been synchronized yet.
-So it connects to the WiFi network, and by making an HTTPS request to [WorldTimeAPI] to get the current time and time offset.
+So it connects to the WiFi network, and by making an HTTPS request to [Adafruit IO] to get the current time and time offset.
 This might be changed to use SNTP in the future, though that does not provide information about the time offset.
 Then it disconnects from the WiFi network (this is required to be able to enter deep sleep later).
 
@@ -62,7 +62,7 @@ Or even for using asynchronous I²C and SPI interface.
 And definitely there is no actual reason for using a TLS layer and connecting over HTTPS rather than HTTP.
 However, as mentioned earlier, this application is meant as a reference / example / starting point for more complex projects.
 
-[WorldTimeAPI]: https://worldtimeapi.org/
+[Adafruit IO]: https://io.adafruit.com/
 
 
 Connections
@@ -135,14 +135,7 @@ See the [Contributing Guide](./CONTRIBUTING.md) for more information about devel
 License
 ----
 
-Copyright Claudio Mattera 2024
-
-### Main Firmware
-
-You are free to copy, modify, and distribute this firmware with attribution under the terms of the MPL 2.0 license ([`LICENSE-MPL-2.0.md`](./LICENSE-MPL-2.0.md) or <https://opensource.org/licenses/MPL-2.0>).
-
-
-### Display Driver
+Copyright Claudio Mattera 2024-2025
 
 You are free to copy, modify, and distribute this driver with attribution under the terms of either
 

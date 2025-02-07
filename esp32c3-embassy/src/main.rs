@@ -1,8 +1,10 @@
-// Copyright Claudio Mattera 2024.
+// Copyright Claudio Mattera 2024-2025.
 //
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+// Distributed under the MIT License or the Apache 2.0 License at your option.
+// See the accompanying files LICENSE-MIT.txt and LICENSE-APACHE-2.0.txt, or
+// online at
+// https://opensource.org/licenses/MIT
+// https://opensource.org/licenses/Apache-2.0
 
 //! Main crate
 
@@ -27,10 +29,9 @@ use embassy_sync::channel::Sender;
 use esp_alloc::heap_allocator;
 
 use esp_hal::clock::CpuClock;
-use esp_hal::dma::Dma;
 use esp_hal::dma::DmaBufError;
+use esp_hal::dma::DmaChannel0;
 use esp_hal::dma::DmaDescriptor;
-use esp_hal::dma::DmaPriority;
 use esp_hal::dma::DmaRxBuf;
 use esp_hal::dma::DmaTxBuf;
 use esp_hal::gpio::GpioPin;
@@ -39,27 +40,29 @@ use esp_hal::gpio::Level;
 use esp_hal::gpio::Output;
 use esp_hal::gpio::Pull;
 use esp_hal::i2c::master::Config as I2cConfig;
+use esp_hal::i2c::master::ConfigError as I2cConfigError;
 use esp_hal::i2c::master::I2c;
 use esp_hal::init as initialize_esp_hal;
-use esp_hal::peripherals::DMA;
 use esp_hal::peripherals::I2C0;
 use esp_hal::peripherals::RADIO_CLK;
 use esp_hal::peripherals::SPI2;
 use esp_hal::peripherals::TIMG0;
 use esp_hal::peripherals::WIFI;
-use esp_hal::prelude::*; // RateExtU32, main, ram
+use esp_hal::ram;
 use esp_hal::rng::Rng;
 use esp_hal::spi::master::Config as SpiConfig;
+use esp_hal::spi::master::ConfigError as SpiConfigError;
 use esp_hal::spi::master::Spi;
 use esp_hal::spi::master::SpiDma;
-use esp_hal::spi::SpiMode;
-use esp_hal::timer::systimer::SystemTimer;
-use esp_hal::timer::systimer::Target;
+use esp_hal::spi::Mode as SpiMode;
+use esp_hal::time::RateExtU32 as _;
 use esp_hal::timer::timg::TimerGroup;
 use esp_hal::Async;
+use esp_hal::Blocking;
 use esp_hal::Config as EspConfig;
 
 use esp_hal_embassy::init as initialize_embassy;
+use esp_hal_embassy::main;
 
 use time::OffsetDateTime;
 
@@ -71,6 +74,8 @@ use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_backtrace as _;
 
 use static_cell::StaticCell;
+
+mod adafruitio;
 
 mod logging;
 use self::logging::setup as setup_logging;
@@ -107,8 +112,6 @@ mod wifi;
 use self::wifi::connect as connect_to_wifi;
 use self::wifi::Error as WifiError;
 use self::wifi::STOP_WIFI_SIGNAL;
-
-mod worldtimeapi;
 
 /// Period to wait between readings
 const SAMPLING_PERIOD: Duration = Duration::from_secs(60);
@@ -203,8 +206,8 @@ async fn main_fallible(
 
     heap_allocator!(HEAP_MEMORY_SIZE);
 
-    let systimer = SystemTimer::new(peripherals.SYSTIMER).split::<Target>();
-    initialize_embassy(systimer.alarm0);
+    let timg1 = TimerGroup::new(peripherals.TIMG1);
+    initialize_embassy(timg1.timer0);
 
     let rng = Rng::new(peripherals.RNG);
 
@@ -236,7 +239,7 @@ async fn main_fallible(
             rst: peripherals.GPIO10,
             dc: peripherals.GPIO19,
             spi2: peripherals.SPI2,
-            dma: peripherals.DMA,
+            dma: peripherals.DMA_CH0,
         },
         history,
     )?;
@@ -252,7 +255,7 @@ async fn main_fallible(
         },
         clock.clone(),
         sender,
-    );
+    )?;
 
     info!("Stay awake for {}s", AWAKE_PERIOD.as_secs());
     Timer::after(AWAKE_PERIOD).await;
@@ -317,8 +320,8 @@ struct DisplayPeripherals {
     /// SPI interface
     spi2: SPI2,
 
-    /// DMA interface
-    dma: DMA,
+    /// DMA channel
+    dma: DmaChannel0,
 }
 
 /// Setup display task
@@ -328,15 +331,12 @@ fn setup_display_task(
     history: &'static mut HistoryBuffer<(OffsetDateTime, Sample), 96>,
 ) -> Result<Sender<'static, NoopRawMutex, (OffsetDateTime, Sample), 3>, Error> {
     info!("Create SPI bus");
-    let spi_config = SpiConfig {
-        frequency: 25_u32.kHz(),
-        mode: SpiMode::Mode0,
-        ..Default::default()
-    };
-    let spi_bus = Spi::new_with_config(peripherals.spi2, spi_config)
+    let spi_config = SpiConfig::default()
+        .with_frequency(25_u32.kHz())
+        .with_mode(SpiMode::_0);
+    let spi_bus = Spi::new(peripherals.spi2, spi_config)?
         .with_sck(peripherals.sclk)
-        .with_mosi(peripherals.mosi)
-        .into_async();
+        .with_mosi(peripherals.mosi);
 
     info!("Wrap SPI bus in a SPI DMA");
     let descriptors: &'static mut _ = DESCRIPTORS.init([DmaDescriptor::EMPTY; DESCRIPTORS_SIZE]);
@@ -346,10 +346,8 @@ fn setup_display_task(
     let buffer: &'static mut _ = BUFFER.init([0; BUFFERS_SIZE]);
     let rx_buffer: &'static mut _ = RX_BUFFER.init([0; BUFFERS_SIZE]);
 
-    let dma = Dma::new(peripherals.dma);
-    let dma_channel = dma.channel0.configure(false, DmaPriority::Priority0);
-
-    let spi_dma: SpiDma<'_, Async> = spi_bus.with_dma(dma_channel);
+    let spi_dma: SpiDma<'_, Blocking> = spi_bus.with_dma(peripherals.dma);
+    let spi_dma: SpiDma<'_, Async> = spi_dma.into_async();
 
     let tx_buffers = DmaTxBuf::new(descriptors, buffer)?;
     let rx_buffers = DmaRxBuf::new(rx_descriptors, rx_buffer)?;
@@ -383,6 +381,7 @@ fn setup_display_task(
 struct SensorPeripherals {
     /// I²C SDA pin
     sda: GpioPin<1>,
+
     /// I²C SCL pin
     scl: GpioPin<2>,
 
@@ -399,13 +398,10 @@ fn setup_sensor_task(
     peripherals: SensorPeripherals,
     clock: Clock,
     sender: Sender<'static, NoopRawMutex, (OffsetDateTime, Sample), 3>,
-) {
+) -> Result<(), Error> {
     info!("Create I²C bus");
-    let i2c_config = I2cConfig {
-        frequency: 25_u32.kHz(),
-        ..Default::default()
-    };
-    let i2c = I2c::new(peripherals.i2c0, i2c_config)
+    let i2c_config = I2cConfig::default().with_frequency(25_u32.kHz());
+    let i2c = I2c::new(peripherals.i2c0, i2c_config)?
         .with_sda(peripherals.sda)
         .with_scl(peripherals.scl)
         .into_async();
@@ -417,6 +413,8 @@ fn setup_sensor_task(
         clock,
         SAMPLING_PERIOD,
     ));
+
+    Ok(())
 }
 
 /// An error
@@ -439,6 +437,13 @@ enum Error {
     /// An error within creation of DMA buffers
     #[expect(unused, reason = "Never read directly")]
     DmaBuffer(DmaBufError),
+
+    /// An error within creation of SPI bus
+    SpiConfig(SpiConfigError),
+
+    /// An error within creation of I²C bus
+    #[expect(unused, reason = "Never read directly")]
+    I2cConfig(I2cConfigError),
 }
 
 impl From<Infallible> for Error {
@@ -462,5 +467,17 @@ impl From<ClockError> for Error {
 impl From<DmaBufError> for Error {
     fn from(error: DmaBufError) -> Self {
         Self::DmaBuffer(error)
+    }
+}
+
+impl From<SpiConfigError> for Error {
+    fn from(error: SpiConfigError) -> Self {
+        Self::SpiConfig(error)
+    }
+}
+
+impl From<I2cConfigError> for Error {
+    fn from(error: I2cConfigError) -> Self {
+        Self::I2cConfig(error)
     }
 }

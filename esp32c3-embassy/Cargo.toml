@@ -7,7 +7,7 @@ description = "An async firmware for ESP32-C3 for reading and displaying sensor 
 readme = { workspace = true }
 homepage = { workspace = true }
 repository = { workspace = true }
-license = "MPL-2.0"
+license = { workspace = true }
 keywords = { workspace = true }
 categories = { workspace = true }
 publish = { workspace = true }
@@ -20,7 +20,7 @@ default = []
 # Embassy
 embassy-executor = { workspace = true, features = ["task-arena-size-81920"] }
 embassy-sync = { workspace = true }
-embassy-time = { workspace = true, features = ["generic-queue"] }
+embassy-time = { workspace = true }
 embassy-net = { workspace = true, features = ["dhcpv4", "dns", "tcp", "udp"] }
 
 # Hardware Abstraction Layer
@@ -30,10 +30,10 @@ embedded-hal-bus = { workspace = true, features = ["async"] }
 embedded-io-async = { workspace = true }
 
 # ESP specifics
-esp-hal = { workspace = true, features = ["esp32c3"] }
+esp-hal = { workspace = true, features = ["esp32c3", "unstable"] }
 esp-hal-embassy = { workspace = true, features = ["esp32c3", "executors"] }
 esp-backtrace = { workspace = true, features = ["esp32c3", "panic-handler", "exception-handler", "println"] }
-esp-println = { workspace = true, features = ["esp32c3", "log", "uart", "colors"] }
+esp-println = { workspace = true, features = ["esp32c3", "log", "uart", "colors", "critical-section"] }
 esp-wifi = { workspace = true, features = ["esp32c3", "wifi", "esp-alloc"] }
 esp-alloc = { workspace = true }
 
@@ -59,10 +59,13 @@ heapless = { workspace = true }
 time = { workspace = true }
 
 # HTTP
-reqwless = { workspace = true, features = ["embedded-tls", "log"] }
+reqwless = { workspace = true, features = ["alloc", "embedded-tls", "log"] }
 
 # Random
 rand_core = { workspace = true }
+
+# JSON
+microjson = { workspace = true}
 
 [lints]
 workspace = true
