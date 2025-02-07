@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update `esp-println` to version 0.13
 - Update `esp-wifi` to version 0.12
 - Enable feature `critical-section` on crate `esp-println`
+- Update `rand_core` to version 0.9
 
 
 ## [0.5.0] - 2024-12-22

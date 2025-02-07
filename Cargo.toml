@@ -81,7 +81,7 @@ time = { version = "0.3", default-features = false }
 reqwless = { version = "0.13", default-features = false }
 
 # Random
-rand_core = { version = "0.6", default-features = false }
+rand_core = { version = "0.9", default-features = false }
 
 # JSON
 microjson = { version = "0.1", default-features = false }
