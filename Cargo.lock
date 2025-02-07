@@ -878,7 +878,7 @@ dependencies = [
 
 [[package]]
 name = "esp32c3-embassy"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "bme280-rs",
  "embassy-executor",
@@ -1758,7 +1758,7 @@ checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 
 [[package]]
 name = "waveshare-154bv2-rs"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "embedded-graphics-core",
  "embedded-hal 1.0.0",
