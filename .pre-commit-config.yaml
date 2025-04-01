@@ -35,13 +35,13 @@ repos:
         name: check Rust source format
 
 -   repo: https://github.com/gitleaks/gitleaks
-    rev: v8.21.2
+    rev: v8.24.2
     hooks:
     -   id: gitleaks
         name: detect secrets
 
 -   repo: https://github.com/crate-ci/typos
-    rev: v1.27.0
+    rev: v1.31.1
     hooks:
     -   id: typos
         name: check spelling

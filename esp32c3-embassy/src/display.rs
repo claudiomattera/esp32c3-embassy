@@ -117,9 +117,9 @@ fn log_sample(sample: &Sample) {
     let pressure = sample.pressure.get::<hectopascal>();
 
     info!("Received sample");
-    info!(" ┣ Temperature: {:.2} C", temperature);
-    info!(" ┣ Humidity:    {:.2} %", humidity);
-    info!(" ┗ Pressure:    {:.2} hPa", pressure);
+    info!(" ┣ Temperature: {temperature:.2} C");
+    info!(" ┣ Humidity:    {humidity:.2} %");
+    info!(" ┗ Pressure:    {pressure:.2} hPa");
 }
 
 /// An error
