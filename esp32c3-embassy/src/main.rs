@@ -36,8 +36,10 @@ use esp_hal::dma::DmaRxBuf;
 use esp_hal::dma::DmaTxBuf;
 use esp_hal::gpio::GpioPin;
 use esp_hal::gpio::Input;
+use esp_hal::gpio::InputConfig;
 use esp_hal::gpio::Level;
 use esp_hal::gpio::Output;
+use esp_hal::gpio::OutputConfig;
 use esp_hal::gpio::Pull;
 use esp_hal::i2c::master::Config as I2cConfig;
 use esp_hal::i2c::master::ConfigError as I2cConfigError;
@@ -55,7 +57,7 @@ use esp_hal::spi::master::ConfigError as SpiConfigError;
 use esp_hal::spi::master::Spi;
 use esp_hal::spi::master::SpiDma;
 use esp_hal::spi::Mode as SpiMode;
-use esp_hal::time::RateExtU32 as _;
+use esp_hal::time::Rate;
 use esp_hal::timer::timg::TimerGroup;
 use esp_hal::Async;
 use esp_hal::Blocking;
@@ -198,13 +200,9 @@ async fn main_fallible(
     spawner: Spawner,
     history: &'static mut HistoryBuffer<(OffsetDateTime, Sample), 96>,
 ) -> Result<(), Error> {
-    let peripherals = initialize_esp_hal({
-        let mut config = EspConfig::default();
-        config.cpu_clock = CpuClock::max();
-        config
-    });
+    let peripherals = initialize_esp_hal(EspConfig::default().with_cpu_clock(CpuClock::max()));
 
-    heap_allocator!(HEAP_MEMORY_SIZE);
+    heap_allocator!(size: HEAP_MEMORY_SIZE);
 
     let timg1 = TimerGroup::new(peripherals.TIMG1);
     initialize_embassy(timg1.timer0);
@@ -223,7 +221,7 @@ async fn main_fallible(
     info!("Now is {}", clock.now()?);
 
     info!("Turn off cold LED");
-    let mut cold_led = Output::new(peripherals.GPIO18, Level::High);
+    let mut cold_led = Output::new(peripherals.GPIO18, Level::High, OutputConfig::default());
     cold_led.set_low();
 
     info!("History contains {} elements", history.len());
@@ -332,7 +330,7 @@ fn setup_display_task(
 ) -> Result<Sender<'static, NoopRawMutex, (OffsetDateTime, Sample), 3>, Error> {
     info!("Create SPI bus");
     let spi_config = SpiConfig::default()
-        .with_frequency(25_u32.kHz())
+        .with_frequency(Rate::from_khz(25_u32))
         .with_mode(SpiMode::_0);
     let spi_bus = Spi::new(peripherals.spi2, spi_config)?
         .with_sck(peripherals.sclk)
@@ -354,12 +352,12 @@ fn setup_display_task(
     let spi_dma_bus = spi_dma.with_buffers(rx_buffers, tx_buffers);
 
     info!("Create PIN for SPI Chip Select");
-    let cs = Output::new(peripherals.cs, Level::High);
+    let cs = Output::new(peripherals.cs, Level::High, OutputConfig::default());
 
     info!("Create additional PINs");
-    let busy = Input::new(peripherals.busy, Pull::Up);
-    let rst = Output::new(peripherals.rst, Level::Low);
-    let dc = Output::new(peripherals.dc, Level::Low);
+    let busy = Input::new(peripherals.busy, InputConfig::default().with_pull(Pull::Up));
+    let rst = Output::new(peripherals.rst, Level::Low, OutputConfig::default());
+    let dc = Output::new(peripherals.dc, Level::Low, OutputConfig::default());
 
     info!("Create SPI device");
     let spi_device = ExclusiveDevice::new(spi_dma_bus, cs, Delay)?;
@@ -400,7 +398,7 @@ fn setup_sensor_task(
     sender: Sender<'static, NoopRawMutex, (OffsetDateTime, Sample), 3>,
 ) -> Result<(), Error> {
     info!("Create I²C bus");
-    let i2c_config = I2cConfig::default().with_frequency(25_u32.kHz());
+    let i2c_config = I2cConfig::default().with_frequency(Rate::from_khz(25_u32));
     let i2c = I2c::new(peripherals.i2c0, i2c_config)?
         .with_sda(peripherals.sda)
         .with_scl(peripherals.scl)

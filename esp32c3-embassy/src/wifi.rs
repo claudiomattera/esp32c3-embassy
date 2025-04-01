@@ -18,7 +18,7 @@ use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::signal::Signal;
 
 use esp_wifi::init as initialize_wifi;
-use esp_wifi::wifi::new_with_mode as new_wifi_with_mode;
+use esp_wifi::wifi::new as new_wifi;
 use esp_wifi::wifi::wifi_state;
 use esp_wifi::wifi::ClientConfiguration;
 use esp_wifi::wifi::Configuration;
@@ -26,7 +26,6 @@ use esp_wifi::wifi::WifiController;
 use esp_wifi::wifi::WifiDevice;
 use esp_wifi::wifi::WifiError as EspWifiError;
 use esp_wifi::wifi::WifiEvent;
-use esp_wifi::wifi::WifiStaDevice;
 use esp_wifi::wifi::WifiState;
 use esp_wifi::EspWifiController;
 use esp_wifi::InitializationError as WifiInitializationError;
@@ -80,7 +79,8 @@ pub async fn connect(
     let wifi_controller = initialize_wifi(timg0.timer0, rng, radio_clock_control)?;
     let wifi_controller: &'static mut _ = WIFI_CONTROLLER.init(wifi_controller);
 
-    let (wifi_interface, controller) = new_wifi_with_mode(wifi_controller, wifi, WifiStaDevice)?;
+    let (controller, wifi_interfaces) = new_wifi(wifi_controller, wifi)?;
+    let wifi_interface = wifi_interfaces.sta;
 
     let config = Config::dhcpv4(DhcpConfig::default());
 
@@ -113,7 +113,7 @@ pub async fn connect(
 
 /// Task for ongoing network processing
 #[embassy_executor::task]
-async fn net_task(mut runner: Runner<'static, WifiDevice<'static, WifiStaDevice>>) {
+async fn net_task(mut runner: Runner<'static, WifiDevice<'static>>) {
     runner.run().await;
 }
 
