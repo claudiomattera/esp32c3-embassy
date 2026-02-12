@@ -23,9 +23,10 @@ use reqwless::client::TlsVerify;
 use reqwless::request::Method;
 use reqwless::Error as ReqlessError;
 
+use heapless::CapacityError;
 use heapless::Vec;
 
-use rand_core::RngCore as _;
+use rand_core::Rng as _;
 
 use crate::RngWrapper;
 
@@ -111,8 +112,7 @@ impl ClientTrait for Client {
 
         debug!("Read {} bytes", buffer.len());
 
-        let output =
-            Vec::<u8, RESPONSE_SIZE>::from_slice(buffer).map_err(|()| Error::ResponseTooLarge)?;
+        let output = Vec::<u8, RESPONSE_SIZE>::from_slice(buffer)?;
 
         Ok(output)
     }
@@ -122,7 +122,7 @@ impl ClientTrait for Client {
 #[derive(Debug)]
 pub enum Error {
     /// Response was too large
-    ResponseTooLarge,
+    ResponseTooLarge(CapacityError),
 
     /// Error within TCP streams
     Tcp(TcpError),
@@ -135,6 +135,12 @@ pub enum Error {
 
     /// Error in HTTP client
     Reqless(#[expect(unused, reason = "Never read directly")] ReqlessError),
+}
+
+impl From<CapacityError> for Error {
+    fn from(error: CapacityError) -> Self {
+        Self::ResponseTooLarge(error)
+    }
 }
 
 impl From<TcpError> for Error {

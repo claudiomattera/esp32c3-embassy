@@ -18,7 +18,7 @@ default = []
 
 [dependencies]
 # Embassy
-embassy-executor = { workspace = true, features = ["task-arena-size-81920"] }
+embassy-executor = { workspace = true }
 embassy-sync = { workspace = true }
 embassy-time = { workspace = true }
 embassy-net = { workspace = true, features = ["dhcpv4", "dns", "tcp", "udp"] }
@@ -30,11 +30,11 @@ embedded-hal-bus = { workspace = true, features = ["async"] }
 embedded-io-async = { workspace = true }
 
 # ESP specifics
-esp-hal = { workspace = true, features = ["esp32c3", "unstable"] }
-esp-hal-embassy = { workspace = true, features = ["esp32c3", "executors"] }
-esp-backtrace = { workspace = true, features = ["esp32c3", "panic-handler", "exception-handler", "println"] }
-esp-println = { workspace = true, features = ["esp32c3", "log", "uart", "colors"] }
-esp-wifi = { workspace = true, features = ["esp32c3", "wifi", "esp-alloc", "builtin-scheduler"] }
+esp-hal = { workspace = true, features = ["esp32c3", "unstable", "rt", "exception-handler", "log-04"] }
+esp-backtrace = { workspace = true, features = ["esp32c3", "panic-handler", "println"] }
+esp-println = { workspace = true, features = ["esp32c3", "log-04", "auto", "colors", "critical-section"] }
+esp-radio = { workspace = true, features = ["esp32c3", "wifi", "esp-alloc", "log-04"] }
+esp-rtos = { workspace = true, features = ["esp32c3", "esp-radio", "embassy"] }
 esp-alloc = { workspace = true }
 
 # Logging

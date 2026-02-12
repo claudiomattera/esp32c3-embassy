@@ -11,6 +11,8 @@
 #![no_std]
 #![no_main]
 
+extern crate alloc;
+
 use core::convert::Infallible;
 
 use log::error;
@@ -30,11 +32,9 @@ use esp_alloc::heap_allocator;
 
 use esp_hal::clock::CpuClock;
 use esp_hal::dma::DmaBufError;
-use esp_hal::dma::DmaChannel0;
 use esp_hal::dma::DmaDescriptor;
 use esp_hal::dma::DmaRxBuf;
 use esp_hal::dma::DmaTxBuf;
-use esp_hal::gpio::GpioPin;
 use esp_hal::gpio::Input;
 use esp_hal::gpio::InputConfig;
 use esp_hal::gpio::Level;
@@ -45,10 +45,18 @@ use esp_hal::i2c::master::Config as I2cConfig;
 use esp_hal::i2c::master::ConfigError as I2cConfigError;
 use esp_hal::i2c::master::I2c;
 use esp_hal::init as initialize_esp_hal;
+use esp_hal::interrupt::software::SoftwareInterruptControl;
+use esp_hal::peripherals::DMA_CH0;
+use esp_hal::peripherals::GPIO1;
+use esp_hal::peripherals::GPIO10;
+use esp_hal::peripherals::GPIO19;
+use esp_hal::peripherals::GPIO2;
+use esp_hal::peripherals::GPIO6;
+use esp_hal::peripherals::GPIO7;
+use esp_hal::peripherals::GPIO8;
+use esp_hal::peripherals::GPIO9;
 use esp_hal::peripherals::I2C0;
-use esp_hal::peripherals::RADIO_CLK;
 use esp_hal::peripherals::SPI2;
-use esp_hal::peripherals::TIMG0;
 use esp_hal::peripherals::WIFI;
 use esp_hal::ram;
 use esp_hal::rng::Rng;
@@ -63,12 +71,12 @@ use esp_hal::Async;
 use esp_hal::Blocking;
 use esp_hal::Config as EspConfig;
 
-use esp_hal_embassy::init as initialize_embassy;
-use esp_hal_embassy::main;
+use esp_rtos::main;
+use esp_rtos::start as start_rtos;
 
 use time::OffsetDateTime;
 
-use heapless::HistoryBuffer;
+use heapless::HistoryBuf;
 use heapless::String;
 
 use embedded_hal_bus::spi::ExclusiveDevice;
@@ -158,16 +166,16 @@ static RX_BUFFER: StaticCell<[u8; BUFFERS_SIZE]> = StaticCell::new();
 ///
 /// This is a statically allocated variable and it is placed in the RTC Fast
 /// memory, which survives deep sleep.
-#[ram(rtc_fast)]
+#[ram(unstable(rtc_fast))]
 static BOOT_COUNT: SyncUnsafeCell<u32> = SyncUnsafeCell::new(0);
 
 /// Stored history between deep sleep cycles
 ///
 /// This is a statically allocated variable and it is placed in the RTC Fast
 /// memory, which survives deep sleep.
-#[ram(rtc_fast)]
-static HISTORY: SyncUnsafeCell<HistoryBuffer<(OffsetDateTime, Sample), 96>> =
-    SyncUnsafeCell::new(HistoryBuffer::new());
+#[ram(unstable(rtc_fast))]
+static HISTORY: SyncUnsafeCell<HistoryBuf<(OffsetDateTime, Sample), 96>> =
+    SyncUnsafeCell::new(HistoryBuf::new());
 
 /// Main task
 #[main]
@@ -198,25 +206,19 @@ async fn main(spawner: Spawner) {
 /// Main task that can return an error
 async fn main_fallible(
     spawner: Spawner,
-    history: &'static mut HistoryBuffer<(OffsetDateTime, Sample), 96>,
+    history: &'static mut HistoryBuf<(OffsetDateTime, Sample), 96>,
 ) -> Result<(), Error> {
     let peripherals = initialize_esp_hal(EspConfig::default().with_cpu_clock(CpuClock::max()));
 
     heap_allocator!(size: HEAP_MEMORY_SIZE);
 
     let timg1 = TimerGroup::new(peripherals.TIMG1);
-    initialize_embassy(timg1.timer0);
+    let sw_int = SoftwareInterruptControl::new(peripherals.SW_INTERRUPT);
+    start_rtos(timg1.timer0, sw_int.software_interrupt0);
 
-    let rng = Rng::new(peripherals.RNG);
+    let rng = Rng::new();
 
-    let clock = load_clock(
-        spawner,
-        peripherals.TIMG0,
-        peripherals.WIFI,
-        peripherals.RADIO_CLK,
-        rng,
-    )
-    .await?;
+    let clock = load_clock(spawner, peripherals.WIFI, rng).await?;
 
     info!("Now is {}", clock.now()?);
 
@@ -263,24 +265,17 @@ async fn main_fallible(
 }
 
 /// Load clock from RTC memory of from server
-async fn load_clock(
-    spawner: Spawner,
-    timg0: TIMG0,
-    wifi: WIFI,
-    radio_clk: RADIO_CLK,
-    rng: Rng,
-) -> Result<Clock, Error> {
+async fn load_clock(spawner: Spawner, wifi: WIFI<'static>, rng: Rng) -> Result<Clock, Error> {
     let clock = if let Some(clock) = Clock::from_rtc_memory() {
         info!("Clock loaded from RTC memory");
         clock
     } else {
-        let ssid = String::<32>::try_from(WIFI_SSID).map_err(|()| Error::ParseCredentials)?;
+        let ssid = String::<32>::try_from(WIFI_SSID).map_err(|_| Error::ParseCredentials)?;
         let password =
-            String::<64>::try_from(WIFI_PASSWORD).map_err(|()| Error::ParseCredentials)?;
+            String::<64>::try_from(WIFI_PASSWORD).map_err(|_| Error::ParseCredentials)?;
 
         info!("Connect to WiFi");
-        let timg0 = TimerGroup::new(timg0);
-        let stack = connect_to_wifi(spawner, timg0, rng, wifi, radio_clk, (ssid, password)).await?;
+        let stack = connect_to_wifi(spawner, rng, wifi, (ssid, password)).await?;
 
         info!("Synchronize clock from server");
         let mut http_client = HttpClient::new(stack, RngWrapper::from(rng));
@@ -298,35 +293,35 @@ async fn load_clock(
 /// Peripherals used by the display
 struct DisplayPeripherals {
     /// SPI sclk
-    sclk: GpioPin<6>,
+    sclk: GPIO6<'static>,
 
     /// SPI mosi
-    mosi: GpioPin<7>,
+    mosi: GPIO7<'static>,
 
     /// SPI chip selection
-    cs: GpioPin<8>,
+    cs: GPIO8<'static>,
 
     /// Busy signal
-    busy: GpioPin<9>,
+    busy: GPIO9<'static>,
 
     /// Reset signal
-    rst: GpioPin<10>,
+    rst: GPIO10<'static>,
 
     /// Command signal
-    dc: GpioPin<19>,
+    dc: GPIO19<'static>,
 
     /// SPI interface
-    spi2: SPI2,
+    spi2: SPI2<'static>,
 
     /// DMA channel
-    dma: DmaChannel0,
+    dma: DMA_CH0<'static>,
 }
 
 /// Setup display task
 fn setup_display_task(
     spawner: Spawner,
     peripherals: DisplayPeripherals,
-    history: &'static mut HistoryBuffer<(OffsetDateTime, Sample), 96>,
+    history: &'static mut HistoryBuf<(OffsetDateTime, Sample), 96>,
 ) -> Result<Sender<'static, NoopRawMutex, (OffsetDateTime, Sample), 3>, Error> {
     info!("Create SPI bus");
     let spi_config = SpiConfig::default()
@@ -378,13 +373,13 @@ fn setup_display_task(
 /// Peripherals used by the sensor
 struct SensorPeripherals {
     /// I²C SDA pin
-    sda: GpioPin<1>,
+    sda: GPIO1<'static>,
 
     /// I²C SCL pin
-    scl: GpioPin<2>,
+    scl: GPIO2<'static>,
 
     /// I²C interface
-    i2c0: I2C0,
+    i2c0: I2C0<'static>,
 
     /// Random number generator
     rng: Rng,

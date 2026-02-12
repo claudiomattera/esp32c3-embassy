@@ -8,6 +8,8 @@
 
 //! Functions and task for WiFi connection
 
+use alloc::string::ToString as _;
+
 use log::debug;
 use log::error;
 use log::info;
@@ -17,18 +19,19 @@ use embassy_executor::Spawner;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::signal::Signal;
 
-use esp_wifi::init as initialize_wifi;
-use esp_wifi::wifi::new as new_wifi;
-use esp_wifi::wifi::wifi_state;
-use esp_wifi::wifi::ClientConfiguration;
-use esp_wifi::wifi::Configuration;
-use esp_wifi::wifi::WifiController;
-use esp_wifi::wifi::WifiDevice;
-use esp_wifi::wifi::WifiError as EspWifiError;
-use esp_wifi::wifi::WifiEvent;
-use esp_wifi::wifi::WifiState;
-use esp_wifi::EspWifiController;
-use esp_wifi::InitializationError as WifiInitializationError;
+use esp_radio::init as initialize_wifi;
+use esp_radio::wifi::new as new_wifi;
+use esp_radio::wifi::sta_state;
+use esp_radio::wifi::ClientConfig;
+use esp_radio::wifi::Config as WifiConfig;
+use esp_radio::wifi::ModeConfig;
+use esp_radio::wifi::WifiController;
+use esp_radio::wifi::WifiDevice;
+use esp_radio::wifi::WifiError as EspWifiError;
+use esp_radio::wifi::WifiEvent;
+use esp_radio::wifi::WifiStaState;
+use esp_radio::Controller;
+use esp_radio::InitializationError as WifiInitializationError;
 
 use embassy_net::new as new_network_stack;
 use embassy_net::Config;
@@ -40,17 +43,14 @@ use embassy_net::StackResources;
 use embassy_time::Duration;
 use embassy_time::Timer;
 
-use esp_hal::peripherals::RADIO_CLK;
-use esp_hal::peripherals::TIMG0;
 use esp_hal::peripherals::WIFI;
 use esp_hal::rng::Rng;
-use esp_hal::timer::timg::TimerGroup;
 
 use heapless::String;
 
 use static_cell::StaticCell;
 
-use rand_core::RngCore as _;
+use rand_core::Rng as _;
 
 use crate::RngWrapper;
 
@@ -58,7 +58,7 @@ use crate::RngWrapper;
 static STACK_RESOURCES: StaticCell<StackResources<3>> = StaticCell::new();
 
 /// Static cell for WiFi controller
-static WIFI_CONTROLLER: StaticCell<EspWifiController<'static>> = StaticCell::new();
+static RADIO_CONTROLLER: StaticCell<Controller<'static>> = StaticCell::new();
 
 /// Signal to request to stop WiFi
 pub static STOP_WIFI_SIGNAL: Signal<CriticalSectionRawMutex, ()> = Signal::new();
@@ -66,21 +66,18 @@ pub static STOP_WIFI_SIGNAL: Signal<CriticalSectionRawMutex, ()> = Signal::new()
 /// Connect to WiFi
 pub async fn connect(
     spawner: Spawner,
-    timg0: TimerGroup<TIMG0>,
     rng: Rng,
-    wifi: WIFI,
-    radio_clock_control: RADIO_CLK,
+    wifi: WIFI<'static>,
     (ssid, password): (String<32>, String<64>),
 ) -> Result<Stack<'static>, Error> {
     let mut rng_wrapper = RngWrapper::from(rng);
     let seed = rng_wrapper.next_u64();
     debug!("Use random seed 0x{seed:016x}");
 
-    let wifi_controller = initialize_wifi(timg0.timer0, rng, radio_clock_control)?;
-    let wifi_controller: &'static mut _ = WIFI_CONTROLLER.init(wifi_controller);
+    let radio_controller: &'static mut _ = RADIO_CONTROLLER.init(initialize_wifi()?);
 
-    let (controller, wifi_interfaces) = new_wifi(wifi_controller, wifi)?;
-    let wifi_interface = wifi_interfaces.sta;
+    let (controller, interfaces) = new_wifi(radio_controller, wifi, WifiConfig::default())?;
+    let wifi_interface = interfaces.sta;
 
     let config = Config::dhcpv4(DhcpConfig::default());
 
@@ -136,19 +133,20 @@ async fn connection_fallible(
     debug!("Start connection");
     debug!("Device capabilities: {:?}", controller.capabilities());
     loop {
-        if wifi_state() == WifiState::StaConnected {
+        if let WifiStaState::Connected = sta_state() {
             // wait until we're no longer connected
             controller.wait_for_event(WifiEvent::StaDisconnected).await;
             Timer::after(Duration::from_millis(5000)).await;
         }
 
         if !matches!(controller.is_started(), Ok(true)) {
-            let client_config = Configuration::Client(ClientConfiguration {
-                ssid: ssid.clone(),
-                password: password.clone(),
-                ..Default::default()
-            });
-            controller.set_configuration(&client_config)?;
+            let client_config = ModeConfig::Client(
+                ClientConfig::default()
+                    .with_ssid(ssid.to_string())
+                    .with_password(password.to_string()),
+            );
+            controller.set_config(&client_config)?;
+
             debug!("Starting WiFi controller");
             controller.start_async().await?;
             debug!("WiFi controller started");
