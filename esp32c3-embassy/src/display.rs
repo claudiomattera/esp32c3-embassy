@@ -31,7 +31,7 @@ use esp_hal::gpio::Output;
 use esp_hal::spi::master::SpiDmaBus;
 use esp_hal::Async;
 
-use heapless::HistoryBuffer;
+use heapless::HistoryBuf;
 
 use uom::si::pressure::hectopascal;
 use uom::si::ratio::percent;
@@ -54,7 +54,7 @@ pub async fn update_task(
     rst: Output<'static>,
     dc: Output<'static>,
     receiver: Receiver<'static, NoopRawMutex, Reading, 3>,
-    history: &'static mut HistoryBuffer<(OffsetDateTime, Sample), 96>,
+    history: &'static mut HistoryBuf<(OffsetDateTime, Sample), 96>,
 ) {
     info!("Create display");
     let mut display = AsyncDisplay::new_with_individual_writes(spi_device, busy, rst, dc, Delay);
@@ -81,7 +81,7 @@ pub async fn update_task(
 /// Report a new sample
 async fn report<SPI, BUSY, RST, DC, DELAY>(
     now: &OffsetDateTime,
-    history: &HistoryBuffer<Reading, 96>,
+    history: &HistoryBuf<Reading, 96>,
     display: &mut AsyncDisplay<SPI, BUSY, RST, DC, DELAY>,
 ) -> Result<(), ReportError>
 where

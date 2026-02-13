@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-02-13
+
+### Changed
+
+- Update `embassy-executor` to version 0.9
+- Update `embassy-sync` to version 0.7
+- Update `embassy-time` to version 0.5
+- Update `embassy-net` to version 0.7
+- Update `embedded-io-async` to version 0.7
+- Update `esp-hal` to version 1
+- Remove `esp-hal-embassy`
+- Update `esp-backtrace` to version 0.18
+- Update `esp-println` to version 0.16
+- Replace `esp-wifi` with `esp-radio` version 0.17
+- Add `esp-rtos` version 0.2
+- Update `esp-alloc` to version 0.9
+- Update `heapless` to version 0.9
+- Update `rand_core` to version 0.10
+- Disable feature `critical-section` on crate `esp-println`
+- Enable feature `builtin-scheduler` on crate `esp-wifi`
+
+
 ## [0.7.0] - 2025-04-01
 
 ### Changed
@@ -114,3 +136,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.5.0]: https://gitlab.com/claudiomattera/esp32c3-embassy/-/tags/0.5.0
 [0.6.0]: https://gitlab.com/claudiomattera/esp32c3-embassy/-/tags/0.6.0
 [0.7.0]: https://gitlab.com/claudiomattera/esp32c3-embassy/-/tags/0.7.0
+[0.8.0]: https://gitlab.com/claudiomattera/esp32c3-embassy/-/tags/0.8.0

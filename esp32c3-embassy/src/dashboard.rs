@@ -108,7 +108,7 @@ fn lay_out_measurement<'text>(
     clippy::needless_lifetimes,
     reason = "Lifetime annotation is actually needed"
 )]
-fn lay_out_update_time<'text>(now: &'text str) -> impl Drawable<Color = TriColor> + View + 'text {
+fn lay_out_update_time(now: &str) -> impl Drawable<Color = TriColor> + View + '_ {
     LinearLayout::horizontal(
         Chain::new(Text::new("Updated at ", Point::zero(), BLACK_STYLE)).append(Text::new(
             now,
